@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import WelcomeNotice from '../components/WelcomeNotice.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import FriendImage from '../components/FriendImage.astro';
 const {title='Good people. Great stories.', description='A magazine for our people. Achievements, announcements, projects, and a little well-deserved attention.', active='', demo=true, image=''}=Astro.props;
@@ -21,7 +22,7 @@ const {title='Good people. Great stories.', description='A magazine for our peop
         <a class="wordmark" href="/" aria-label="Vanity Vair home">VANITY VAIR</a>
         <div class="header-tools"><a class="header-action header-promos" href="/about#promotions">PROMOTIONS</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-drawer"><span>MENU</span><span class="hamburger" aria-hidden="true"><i></i><i></i></span></button></div>
       </div>
-      <div class="header-bottom"><nav aria-label="Main navigation"><a class:list={{selected:active==='all'}} href="/archive">ALL STORIES</a><a class:list={{selected:active==='Achievements'}} href="/category/achievements">ACHIEVEMENTS</a><a class:list={{selected:active==='Announcements'}} href="/category/announcements">ANNOUNCEMENTS</a><a class:list={{selected:active==='Projects'}} href="/category/projects">PROJECTS</a></nav></div>
+      <div class="header-bottom"><nav aria-label="Main navigation"><a class:list={{selected:active==='all'}} href="/archive">ALL STORIES</a><a class:list={{selected:active==='Achievements'}} href="/category/achievements">ACHIEVEMENTS</a><a class:list={{selected:active==='Announcements'}} href="/category/announcements">ANNOUNCEMENTS</a><a class:list={{selected:active==='Projects'}} href="/category/projects">PROJECTS</a><a class:list={{selected:active==='gallery'}} href="/gallery">GALLERY</a></nav></div>
     </header>
     <button class="drawer-backdrop" type="button" tabindex="-1" aria-label="Close menu"></button>
     <aside class="site-drawer" id="site-drawer" aria-label="Site menu" aria-hidden="true" inert>
@@ -30,7 +31,7 @@ const {title='Good people. Great stories.', description='A magazine for our peop
         <a href="/category/achievements">ACHIEVEMENTS <span aria-hidden="true">＋</span></a>
         <a href="/category/announcements">ANNOUNCEMENTS <span aria-hidden="true">＋</span></a>
         <a href="/category/projects">PROJECTS <span aria-hidden="true">＋</span></a>
-        <a href="/archive">ALL STORIES</a>
+        <a href="/archive">ALL STORIES</a><a href="/gallery">GALLERY</a>
       </nav>
       <p class="drawer-more">THE REST</p>
       <nav class="drawer-more-links" aria-label="More links">
@@ -44,7 +45,13 @@ const {title='Good people. Great stories.', description='A magazine for our peop
     <main id="main"><slot /></main>
     {active !== 'home' && Astro.url.pathname !== '/about' && !Astro.url.pathname.startsWith('/preview/') && <FriendImage offset={2} />}
     <SiteFooter demo={demo} />
+    {!Astro.url.pathname.startsWith('/preview/') && <WelcomeNotice />}
     <script>
+      // A deterrent for casual saving; visible images remain accessible to the browser.
+      document.addEventListener('contextmenu',event=>{if(event.target instanceof Element && event.target.closest('img'))event.preventDefault();});
+      document.addEventListener('dragstart',event=>{if(event.target instanceof Element && event.target.closest('img'))event.preventDefault();});
+      document.querySelectorAll('img').forEach(image=>image.draggable=false);
+
       document.querySelectorAll<HTMLAnchorElement>('a[href^="/category/"]').forEach(a=>{ if(a.pathname===location.pathname)a.setAttribute('aria-current','page'); });
       const menuToggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
       const drawer = document.querySelector<HTMLElement>('#site-drawer');

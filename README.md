@@ -2,6 +2,8 @@
 
 An independent friends’ magazine: Achievements, Announcements, Projects, and handpicked business promotions. Built with Astro, Cloudflare Workers, D1, a private R2 bucket, and a Tiptap writing desk.
 
+For day-to-day publishing, contributor invitations, launch steps, updates, and backups, start with the [Owner Guide](docs/OWNER_GUIDE.md).
+
 ## Review on your laptop and phone
 
 ```sh
@@ -30,7 +32,21 @@ Send design notes and screenshots in the Codex chat. Useful things to review: ma
 
 An article’s last approved snapshot remains public while anyone edits its next draft. Saving never updates the public snapshot; only publishing does. Each story keeps its original URL when its headline changes. The first six newest published stories populate the homepage; the searchable archive contains up to the most recent 250. Pagination is a future improvement once the magazine approaches that size.
 
+### Trash
+
+Gallery posts and saved articles can be moved to **Trash** in the writing desk. They disappear from public pages immediately. Restore within 30 days to recover the content, photos, hashtags, and previous visibility; a previously public item becomes public again. Contributors manage their own Gallery posts and unpublished articles; only the owner can trash or restore published articles. Article deletion checks the current revision so an older tab cannot delete a newer save.
+
+Recovery expires 30 days after deletion. Expired records and their references are permanently removed on the next editorial API request. Uploaded files stay in the Photo library, where unused photos can be removed separately. Apply migration `0010_trash.sql` before deploying. Gallery management uses a compact image grid: hover or focus for Edit/Delete controls, always visible on touch devices. Open a tile to change photos, their order, caption, or visibility.
+
+### Gallery
+
+Gallery (`/gallery`) is a public photo feed, separate from articles. Signed-in contributors choose or upload up to 10 photos in **Gallery** in the writing desk, add an optional caption (up to 1,000 characters), and select **Post to Gallery** to publish immediately. Photos require a description and photographer credit (or Screenshot), and use the existing 500 KB compression and storage cap. Each person can edit their own captions, hide posts, and restore them; the owner can manage all posts. Hidden posts stop appearing publicly and their photos lose public access unless another public story, profile, promotion, or Gallery post references them. Hidden posts retain their photos for restoration.
+
+The public page shows up to the latest 200 moments, with compact photo carousels, dots, keyboard navigation, native touch swiping, and full photo viewing. Hashtags in captions become links to exact, case-insensitive tag feeds; editing a caption updates its tags. Reorder selected photos before posting to choose the cover. Unfinished composer selections/captions stay in that browser. Caption edits must be saved explicitly. Apply `0008_gallery.sql` and `0009_gallery_carousels_tags.sql` before deploying. The latter preserves existing single-photo posts. Optional local samples: `node scripts/seed-gallery.mjs`; these use the existing illustrative Unsplash photos and never target remote data.
+
 ### Contributors
+
+Every contributor can open **My profile** in the writing desk to upload or remove their own portrait. Photos display as black-and-white circles above article bylines and on contributor pages. Saving a portrait makes that photo public; replacing or removing it revokes public access unless a story or ad also uses it. Apply migration `0007_profile_photos.sql` before deploying this version.
 
 In **Our people**, enter a friend’s name, email, bio, and optional HTTPS portfolio URL. Add the same email to the Cloudflare Access allow-list. Share `https://vanityvair.com/editor`; they enter their email, receive a code, and start writing. Inviting a person in this app does not send a separate invitation email or modify Cloudflare policies automatically.
 
@@ -38,7 +54,7 @@ To update a contributor’s byline, enter their existing email and updated detai
 
 ### Ads
 
-Open **Ads** in the owner’s writing desk (`/editor?tab=ads`). Upload a complete image, choose **Banner (8:1)** or **Poster (2:3)**, adjust the crop, enter an image description and an optional HTTPS or site link, then save. Recommended sizes are 1600 × 200 and 800 × 1200. All lettering and logos belong in the image itself. The uploader compresses the cropped image to at most 500 KB; the server checks file size, image dimensions, and shape too. Originals never upload.
+Open **Ads** in the owner’s writing desk (`/editor?tab=ads`). Upload a complete image, choose **Banner (4:1)** or **Poster (1:4)**, adjust the crop, enter an image description and an optional HTTPS or site link, then save. Recommended sizes are 1600 × 400 and 400 × 1600. All lettering and logos belong in the image itself. The uploader compresses the cropped image to at most 500 KB; the server checks file size, image dimensions, and shape too. Originals never upload.
 
 Use the shape filters to browse the library. **Edit** replaces artwork or changes its link; **Pause / Activate** controls the rotation. **Delete** removes the rotation entry. Its image remains in the shared Photo library for reuse; remove it there when no story or ad references it. This also releases its storage allocation. Failed saves keep the form and uploaded image available for retry, and leaving an unsaved form prompts before discarding changes.
 
@@ -92,7 +108,7 @@ The build uses the passthrough image service; it does not enable Cloudflare Imag
 
 ## Backup, export, and recovery
 
-Keep source and `package-lock.json` in a private repository. Do not commit `.dev.vars`, `.env`, local database state, exports, tokens, or private drafts.
+The current GitHub repository is public and contains source and fictional fixtures only. Keep source and `package-lock.json` in version control; store all real content backups privately outside the repository. Do not commit `.dev.vars`, `.env`, local database state, exports, tokens, or private drafts.
 
 Export the selected remote database before migrations and periodically after publishing:
 

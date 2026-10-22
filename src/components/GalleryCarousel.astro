@@ -1,0 +1,13 @@
+---
+import '../styles/gallery-carousel.css';
+import type {GalleryPhoto} from '../lib/gallery';
+import {photoCredit} from '../lib/photo-metadata';
+const {photos,caption=''}=Astro.props as {photos:GalleryPhoto[];caption?:string};
+---
+<div class="moment-carousel" data-caption={caption} role="region" aria-roledescription="carousel" aria-label="Post photos">
+ <div class="carousel-frame"><div class="carousel-track" tabindex="0" aria-label="Photos. Swipe or use left and right arrow keys.">
+  {photos.map((photo,index)=><button class="moment-photo carousel-slide" type="button" data-credit={photoCredit(photo)} aria-label={`Enlarge photo ${index+1} of ${photos.length}: ${photo.description}`}><img src={`/media/${photo.media_id}`} alt={photo.description} width={photo.width||1000} height={photo.height||1000} loading="lazy" /></button>)}
+ </div>{photos.length>1&&<><span class="carousel-count" aria-live="polite">1 / {photos.length}</span></>}</div>
+ {photos.length>1&&<div class="carousel-dots" aria-label="Choose a photo">{photos.map((_,index)=><button type="button" aria-label={`Photo ${index+1} of ${photos.length}`} aria-current={index===0?'true':undefined} data-slide={index}></button>)}</div>}
+ <p class="moment-credit">{photos[0]&&photoCredit(photos[0])}</p>
+</div>

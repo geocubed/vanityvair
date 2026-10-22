@@ -11,7 +11,7 @@ const { demo = false } = Astro.props;
       <nav class="footer-column" aria-labelledby="footer-explore">
         <h2 id="footer-explore">MORE FROM VANITY VAIR</h2>
         <a href="/about">About Vanity Vair</a>
-        <a href="/archive">All stories</a>
+        <a href="/archive">All stories</a><a href="/gallery">Gallery</a>
         <a href="/category/achievements">Achievements</a>
         <a href="/category/announcements">Announcements</a>
         <a href="/category/projects">Projects</a>
@@ -30,13 +30,18 @@ const { demo = false } = Astro.props;
         <a href="/about#promotions">Our promotions</a>
         <a href="/archive#search">Search the archive</a>
         <a href="/editor">The writing desk</a>
+        <a href="#legal">Disclaimer</a>
       </nav>
       <span class="footer-edition">FRIENDS &amp; FAMILY EDITION</span>
     </div>
-    <div class="footer-legal">
-      <p>© {new Date().getFullYear()} Vanity Vair. An independent parody publication. Not affiliated with, endorsed by, or connected to Vanity Fair or Condé Nast.</p>
+    <section class="footer-legal" id="legal" aria-labelledby="footer-legal-heading">
+      <h2 id="footer-legal-heading">DISCLAIMER</h2>
+      <p>Vanity Vair is a casual, not-for-profit parody website made purely for fun, by friends and for friends. We celebrate our friends’ achievements, projects, and everyday moments by giving them the playful treatment of a magazine feature—as if they were in Vanity Fair. They are not actual Vanity Fair articles.</p>
+      <p>For visitors, including the teams at Vanity Fair and Condé Nast: this is an independent friends-and-family project, not an official publication. Vanity Vair is not affiliated with, endorsed by, sponsored by, or connected to Vanity Fair or Condé Nast. The resemblance is part of the parody, not a claim of association.</p>
+      <p>Please visit the <a href="https://www.vanityfair.com/" target="_blank" rel="noopener noreferrer">official Vanity Fair website</a> and enjoy the articles created by its hardworking writers, editors, photographers, and contributors. Give their work some love, too.</p>
+      <p class="footer-copyright">© {new Date().getFullYear()} Vanity Vair.</p>
       {demo && <p class="footer-preview">PREVIEW EDITION · SAMPLE CONTENT</p>}
-    </div>
+    </section>
   </div>
 </footer>
 <style>
@@ -56,9 +61,9 @@ const { demo = false } = Astro.props;
   .footer-utility nav a:first-child{padding-left:0}
   .footer-utility nav a:last-child{border-right:0}
   .footer-edition{flex-shrink:0;border:1px solid #777;padding:15px 18px;font-size:8px;font-weight:500;letter-spacing:1.5px}
-  .footer-legal{font-size:10px;line-height:1.8;color:#888}
+  .footer-legal{font-size:12px;line-height:1.7;color:#aaa;scroll-margin-top:24px}.footer-legal p a{text-decoration:underline;text-underline-offset:3px;color:#ddd}.footer-legal h2{font-size:10px;font-weight:700;letter-spacing:2px;color:#fff;margin:8px 0 15px}.footer-legal p+p{margin-top:12px}.footer-legal .footer-copyright{font-size:10px;color:#888;margin-top:22px}
   .footer-legal p{margin:0;max-width:1100px}
   .footer-legal .footer-preview{margin-top:12px;color:#777;font-size:8px;letter-spacing:1.5px}
   @media(max-width:1000px){.footer-directory{grid-template-columns:1.4fr 1fr 1fr;gap:30px}.footer-masthead{font-size:32px}.footer-utility{align-items:flex-start}.footer-edition{padding:13px 12px;font-size:7px}}
-  @media(max-width:600px){.magazine-footer{padding:36px 0 30px}.footer-directory{grid-template-columns:1fr 1fr;gap:32px 22px;padding-bottom:30px}.footer-identity{grid-column:1/-1}.footer-masthead{font-size:32px}.footer-identity p{font-size:11px;margin-top:10px}.footer-column h2{font-size:8px;letter-spacing:1.3px;min-height:24px;margin-bottom:8px}.footer-column a{font-size:12px}.footer-utility{flex-direction:column;gap:23px;padding-block:25px}.footer-utility nav{gap:12px 18px}.footer-utility nav a{border:0;padding:0;font-size:10px}.footer-edition{font-size:8px}.footer-legal{font-size:9px}.footer-legal .footer-preview{font-size:7px}}
+  @media(max-width:600px){.magazine-footer{padding:36px 0 30px}.footer-directory{grid-template-columns:1fr 1fr;gap:32px 22px;padding-bottom:30px}.footer-identity{grid-column:1/-1}.footer-masthead{font-size:32px}.footer-identity p{font-size:11px;margin-top:10px}.footer-column h2{font-size:8px;letter-spacing:1.3px;min-height:24px;margin-bottom:8px}.footer-column a{font-size:12px}.footer-utility{flex-direction:column;gap:23px;padding-block:25px}.footer-utility nav{gap:12px 18px}.footer-utility nav a{border:0;padding:0;font-size:10px}.footer-edition{font-size:8px}.footer-legal{font-size:11px}.footer-legal .footer-preview{font-size:7px}}
 </style>

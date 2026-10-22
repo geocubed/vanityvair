@@ -1,4 +1,5 @@
 import sanitize from 'sanitize-html';
+import { photoCredit, type PhotoMetadata } from './photo-metadata';
 import { categories } from './types';
 import { videoEmbed } from './video';
 export { MAX_IMAGE_BYTES } from './content-constants';
@@ -9,12 +10,16 @@ export const safeLink = (s: string) => {
   try { const u = new URL(s); return u.protocol === 'https:' ? u.href : ''; } catch { return ''; }
 };
 export const mediaIds = (s: string) => [...new Set([...s.matchAll(/\/media\/([a-f0-9-]{36})/g)].map(m => m[1]))];
-export function cleanBody(body: string) {
+export function cleanBody(body: string, descriptions: Record<string,string | PhotoMetadata> = {}) {
   return sanitize(body, {
     allowedTags: ['p', 'h2', 'h3', 'strong', 'em', 's', 'ul', 'ol', 'li', 'blockquote', 'br', 'a', 'img', 'iframe'],
-    allowedAttributes: { a: ['href', 'target', 'rel'], img: ['src', 'alt', 'title'], iframe: ['src','title','loading','allowfullscreen','referrerpolicy','data-video'] },
+    allowedAttributes: { a: ['href', 'target', 'rel'], img: ['src', 'alt', 'title','data-caption','data-photo-credit'], iframe: ['src','title','loading','allowfullscreen','referrerpolicy','data-video'] },
     allowedSchemes: ['https'],
     transformTags: {
+      img: (_tag, attrs) => {
+        const metadata = descriptions[attrs.src];
+        return {tagName:'img',attribs:{...attrs,'data-caption':(attrs['data-caption'] || '').slice(0,500),alt:typeof metadata === 'object' ? metadata.description || attrs.alt || '' : attrs.alt?.trim() ? attrs.alt : metadata || '', 'data-photo-credit':typeof metadata === 'object' ? photoCredit(metadata) : attrs['data-photo-credit'] || ''}};
+      },
       a: (_tag, attrs) => ({ tagName: 'a', attribs: { href: safeLink(attrs.href || ''), rel: 'noopener noreferrer' } }),
       iframe: (_tag, attrs) => ({tagName:'iframe',attribs:{src:videoEmbed(attrs.src||''),title:'Embedded video','data-video':'true',loading:'lazy',allowfullscreen:'',referrerpolicy:'strict-origin-when-cross-origin'}}),
     },
@@ -29,7 +34,16 @@ export function validateStory(input: Record<string, unknown>) {
   if (category && !categories.includes(category as any)) throw new Error('Choose one of the three categories.');
   const hero = text('hero', 500);
   if (hero && !/^\/media\/[a-f0-9-]{36}$/.test(hero) && !/^https:\/\/images\.unsplash\.com\//.test(hero)) throw new Error('Choose an uploaded photo.');
-  return { title, deck: text('deck', 500), category, body: cleanBody(text('body', 150_000)), hero, hero_alt: text('hero_alt', 500), caption: text('caption', 500) };
+  return { title, deck: text('deck', 500), category, body: cleanBody(text('body', 150_000)), hero, hero_alt: text('hero_alt', 500), caption: text('caption', 500), photo_credit: text('photo_credit', 500) };
 }
 export const dateLabel = (date: string) => new Intl.DateTimeFormat('en-CA', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Vancouver' }).format(new Date(date));
 export const readingTime = (body: string) => Math.max(1, Math.ceil(body.replace(/<[^>]+>/g, ' ').split(/\s+/).length / 220));
+
+export function articleBody(body: string) {
+  // Attribute values come from sanitized HTML. Keep their escaping intact when creating figures.
+  return cleanBody(body).replace(/<img\b[^>]*>/g, image => {
+    const attr = (name:string) => image.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1] || '';
+    const caption=attr('data-caption'); const credit=attr('data-photo-credit');
+    return `<figure class="body-photo">${image}${caption || credit ? `<figcaption><span class="body-photo-caption">${caption}</span><span class="photo-credit">${credit}</span></figcaption>` : ''}</figure>`;
+  });
+}

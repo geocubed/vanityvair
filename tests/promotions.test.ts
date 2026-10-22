@@ -6,8 +6,8 @@ async function request(path:string,method='GET',body?:unknown,role='owner',visit
 }
 describe('owner image promotions',()=>{
   it('validates artwork, protects management, pauses public media, and deletes a rotation entry',async()=>{
-    const buffer=await sharp({create:{width:640,height:80,channels:3,background:'#dce3ca'}}).webp().toBuffer();
-    const uploaded=await fetch(`${base}/api/media`,{method:'POST',headers:{Origin:base,Cookie:'vv-preview-role=owner','Content-Type':'image/webp'},body:buffer});
+    const buffer=await sharp({create:{width:640,height:160,channels:3,background:'#dce3ca'}}).webp().toBuffer();
+    const uploaded=await fetch(`${base}/api/media`,{method:'POST',headers:{Origin:base,Cookie:'vv-preview-role=owner','Content-Type':'image/webp','X-Photo-Description':'A test banner','X-Media-Kind':'artwork'},body:buffer});
     expect(uploaded.status).toBe(201);const photo:any=await uploaded.json();
     const id=crypto.randomUUID();const data={id,name:'Disposable artwork integration check',format:'banner',alt:'A pale green test banner.',url:'',image:photo.url,active:true};
     try {
@@ -35,6 +35,6 @@ describe('owner image promotions',()=>{
     expect(first.headers.get('set-cookie')).toContain('vv-edition=1');
     expect(second.headers.get('set-cookie')).toContain('vv-edition=2');
     expect(image(a)).toBeTruthy();expect(image(a)).not.toBe(image(b));
-    expect(a).not.toContain('promo-banner-card');
+    expect(a).not.toMatch(/class=["'][^"']*\bpromo-banner-card\b/);
   });
 });

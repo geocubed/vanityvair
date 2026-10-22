@@ -1,0 +1,8 @@
+---
+const {title,tagline,kicker='FROM OUR PEOPLE'}=Astro.props as {title:string;tagline:string;kicker?:string};
+---
+<header class="section-page-heading wrap"><div><span class="eyebrow category">{kicker}</span><h1>{title}<span class="red-period">.</span></h1><p>{tagline}</p></div>{Astro.slots.has('actions')&&<div class="section-page-actions"><slot name="actions" /></div>}</header>
+<style>
+ .section-page-heading{max-width:1280px;padding-block:48px 28px;display:flex;align-items:center;justify-content:space-between;gap:24px}.section-page-heading>div:first-child{min-width:0}.section-page-heading h1{font:400 clamp(54px,7vw,96px)/1.05 var(--serif);letter-spacing:-3px;margin:14px 0 18px;overflow-wrap:anywhere}.section-page-heading p{font-family:var(--sans);font-size:18px;line-height:1.5;color:var(--muted);margin:0;max-width:700px}.section-page-actions{flex-shrink:0}
+ @media(max-width:760px){.section-page-heading{padding-block:34px 12px;flex-wrap:wrap;gap:20px}.section-page-heading h1{font-size:clamp(44px,9vw,65px);letter-spacing:-1.7px}.section-page-heading p{font-size:15px}}
+</style>

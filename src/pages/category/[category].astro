@@ -1,11 +1,10 @@
 ---
 import Magazine from '../../layouts/Magazine.astro';
-import StoryCard from '../../components/StoryCard.astro';
+import StoryListing from '../../components/StoryListing.astro';
 import {categories} from '../../lib/types';
 import {publishedStories} from '../../lib/store';
 const category=categories.find(c=>c.toLowerCase()===Astro.params.category);
 if(!category) return Astro.redirect('/404');
-const descriptions={Achievements:'The wins, the firsts, the well-deserved standing ovations.',Announcements:'Heard it here first. Good news travels in good company.',Projects:'Things we’re making. Things we’re dreaming up. Things worth sharing.'};
 const stories=(await publishedStories()).filter(s=>s.category===category);
 ---
-<Magazine title={category} active={category} demo={stories.some(s=>s.id.startsWith('demo-'))}><section class="archive-page wrap"><div class="page-heading"><span class="eyebrow">FROM OUR PEOPLE</span><h1>{category}<span class="red-period">.</span></h1><p>{descriptions[category]}</p></div>{stories.length?<div class="story-grid">{stories.map(story=><StoryCard story={story} />)}</div>:<p class="empty-state">A little quiet here. The next story could be yours.</p>}</section></Magazine>
+<Magazine title={category} active={category} demo={stories.some(s=>s.id.startsWith('demo-'))}><StoryListing title={category} stories={stories} /></Magazine>

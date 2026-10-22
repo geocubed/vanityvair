@@ -1,5 +1,5 @@
 import type { Promotion, PromotionFormat } from './types';
-export const artworkSizes = { banner: { width: 1600, height: 200 }, poster: { width: 800, height: 1200 } } as const;
+export const artworkSizes = { banner: { width: 1600, height: 400 }, poster: { width: 400, height: 1600 } } as const;
 export function cropRectangle(width: number, height: number, format: PromotionFormat, x = 50, y = 50, zoom = 100) {
   const target = artworkSizes[format];
   const ratio = target.width / target.height;

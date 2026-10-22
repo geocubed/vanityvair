@@ -1,0 +1,52 @@
+---
+import FriendImage from '../components/FriendImage.astro';
+import SectionHeading from '../components/SectionHeading.astro';
+import Magazine from '../layouts/Magazine.astro';
+import {galleryPosts} from '../lib/gallery';
+import GalleryCarousel from '../components/GalleryCarousel.astro';
+import {captionParts,normalizeTag} from '../lib/gallery-tags';
+const tag=normalizeTag((Astro.url.searchParams.get('tag')||'').trim()).slice(0,64);
+const posts=await galleryPosts(false,undefined,tag||undefined);
+const date=(value:string)=>new Date(value).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric',timeZone:'America/Vancouver'});
+---
+<Magazine title="Gallery" active="gallery" description="Little moments from our people. A photo, a few words, and a place to put them." demo={posts.some(post=>post.id.startsWith('demo-'))}>
+ <FriendImage />
+ <SectionHeading title="Gallery" tagline="Not everything needs a headline." kicker="THE CAMERA ROLL, SHARED." />
+ <div class="gallery-page wrap">
+  <div class="gallery-bar"><span class="eyebrow">{tag?`#${tag}`:'FROM OUR PEOPLE'}</span><span>Latest moments · {posts.length}{posts.length===200?'+':''}</span></div>
+  {tag&&<p class="gallery-filter">Posts tagged <strong>#{tag}</strong> <a href="/gallery">Clear filter ×</a></p>}
+  {posts.length ? <div class="gallery-feed">{posts.map(post=><article class="gallery-moment" id={`moment-${post.id}`}>
+   <header class="moment-author"><a href={`/people/${post.author_slug}`} tabindex="-1" aria-hidden="true"><img class="contributor-portrait" src={post.author_avatar||'/profile-placeholder.svg'} alt="" width="36" height="36" /></a><div><a href={`/people/${post.author_slug}`}>{post.author_name}</a><time datetime={post.created_at}>{date(post.created_at)}</time></div></header>
+   <GalleryCarousel photos={post.photos} caption={post.caption} />
+   {post.caption&&<p class="moment-caption">{captionParts(post.caption).map(part=>part.tag?<a href={`/gallery?tag=${encodeURIComponent(part.tag)}`} class="hashtag">{part.text}</a>:part.text)}</p>}
+  </article>)}</div> : <div class="gallery-empty"><span aria-hidden="true">＋</span><h2>{tag?`Nothing tagged #${tag} yet.`:'A place for the little things.'}</h2><p>{tag?'Try another tag or browse the latest moments.':'Behind the scenes, somewhere new, or just a really good Tuesday. New moments will appear here soon.'}</p></div>}
+ </div>
+ <dialog class="gallery-lightbox" aria-label="Photo viewer"><button class="lightbox-close" aria-label="Close photo">Close ×</button><div class="lightbox-content"></div><div class="lightbox-details"><div class="lightbox-author"></div><p class="lightbox-caption"></p><div class="lightbox-tags"></div></div></dialog>
+</Magazine>
+<style>
+ .hashtag{color:var(--red);font-weight:500}.hashtag:hover{text-decoration:underline}.gallery-filter{font-size:13px;margin:16px 0 0}.gallery-filter a{margin-left:14px;color:var(--muted)}
+ .gallery-page{max-width:1280px;padding-top:26px;padding-bottom:90px}.gallery-bar{border-bottom:1px solid var(--line);padding:13px 0;display:flex;justify-content:space-between;gap:20px}.gallery-bar>span:last-child{font-size:12px;color:var(--muted)}.gallery-feed{columns:2;column-gap:24px;padding-top:20px;max-width:960px;margin:auto}.gallery-moment{break-inside:avoid;display:flow-root;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--line);scroll-margin-top:30px}.moment-author{display:flex;align-items:center;gap:11px;margin-bottom:10px}.moment-author .contributor-portrait{width:36px;height:36px}.moment-author>div{display:flex;flex-direction:column;gap:4px}.moment-author>div>a{font-size:13px;font-weight:600}.moment-author time{font-size:10px;color:var(--muted)}.moment-caption{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.45;margin:9px 0 4px}.moment-credit{font-size:9px;color:var(--muted);margin:12px 0}.gallery-empty{text-align:center;padding:65px 20px 90px}.gallery-empty>span{display:grid;place-items:center;width:74px;height:74px;border:1px solid var(--line);border-radius:50%;font-size:34px;margin:0 auto 28px;color:var(--muted)}.gallery-empty h2{font:400 42px/1.1 var(--serif);margin:0 0 18px}.gallery-empty p{font-size:15px;line-height:1.7;color:var(--muted);margin-bottom:30px}.gallery-lightbox{max-width:95vw;max-height:95vh;padding:44px 20px 20px;border:0;background:#fff}.gallery-lightbox::backdrop{background:#000d}.gallery-lightbox .lightbox-caption{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0;line-height:1.5;font-size:15px}.lightbox-details{width:100%;padding-top:14px}.lightbox-author{margin:0}.lightbox-tags{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:10px;font-size:14px}.lightbox-tags :global(a){color:var(--red);font-weight:500;overflow-wrap:anywhere}.lightbox-tags :global(a:hover){text-decoration:underline}.lightbox-caption:empty,.lightbox-tags:empty{display:none}.lightbox-close{position:absolute;right:14px;top:10px;background:none;border:0;font-size:12px}
+ @media(max-width:760px){.gallery-feed{columns:1;padding-top:18px}.gallery-bar .eyebrow{font-size:9px}.gallery-bar>span:last-child{font-size:10px}.gallery-empty h2{font-size:34px}.gallery-page{padding-bottom:40px}}
+</style>
+<script>
+ import {captionParts} from '../lib/gallery-tags';
+ import {mountCarousel} from '../scripts/gallery-carousel';
+ const viewer=document.querySelector<HTMLDialogElement>('.gallery-lightbox')!;
+ let disposeViewer:(()=>void)|undefined;
+ document.querySelectorAll<HTMLElement>('.gallery-feed .moment-carousel').forEach(root=>mountCarousel(root,index=>{
+   const clone=root.cloneNode(true) as HTMLElement;
+   viewer.querySelector('.lightbox-content')!.replaceChildren(clone);
+   const author=root.closest('.gallery-moment')?.querySelector('.moment-author');
+   viewer.querySelector('.lightbox-author')!.replaceChildren(...(author?[author.cloneNode(true)]:[]));
+   const parts=captionParts(root.dataset.caption||'');
+   viewer.querySelector('.lightbox-caption')!.textContent=parts.filter(part=>!part.tag).map(part=>part.text).join('').replace(/[ \t]{2,}/g,' ').trim();
+   const tags=viewer.querySelector('.lightbox-tags')!;tags.replaceChildren();
+   const seen=new Set<string>();
+   for(const part of parts){if(!part.tag||seen.has(part.tag))continue;seen.add(part.tag);const link=document.createElement('a');link.href=`/gallery?tag=${encodeURIComponent(part.tag)}`;link.textContent=part.text;tags.append(link);}
+
+   viewer.showModal();disposeViewer=mountCarousel(clone,undefined,index,viewer);
+ }));
+ viewer.querySelector('.lightbox-close')!.addEventListener('click',()=>viewer.close());
+ viewer.addEventListener('close',()=>{disposeViewer?.();viewer.querySelector('.lightbox-content')!.replaceChildren();});
+ viewer.addEventListener('click',event=>{if(event.target===viewer)viewer.close();});
+</script>

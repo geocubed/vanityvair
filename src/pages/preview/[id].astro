@@ -9,4 +9,4 @@ const story=await workingStory(Astro.params.id!);
 if(!story||!canEdit(Astro.locals.user!,story)) return new Response('Not found',{status:404});
 const person=await env.DB.prepare('SELECT * FROM users WHERE email=?').bind(story.author_email).first<User>();
 ---
-<Magazine title={`Preview: ${story.title}`}><Article story={{...story,author_name:person?.name,author_slug:person?.slug}} preview /></Magazine>
+<Magazine title={`Preview: ${story.title}`}><Article story={{...story,author_name:person?.name,author_slug:person?.slug,author_avatar:person?.avatar}} preview /></Magazine>

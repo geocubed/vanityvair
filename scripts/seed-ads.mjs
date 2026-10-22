@@ -16,7 +16,8 @@ const sql = [];
 for (const [suffix, id, filename, format, name, alt] of samples) {
   const mediaId = `00000000-0000-4000-8000-000000000${suffix}`;
   const path = `.wrangler/seed-artwork/${filename}.webp`;
-  const result = await sharp(`scripts/assets/${filename}.svg`).webp({ quality: 92 }).toFile(path);
+  const size = format === 'banner' ? { width: 1600, height: 400 } : { width: 400, height: 1600 };
+  const result = await sharp(`scripts/assets/${filename}.svg`).resize(size.width, size.height).webp({ quality: 92 }).toFile(path);
   execFileSync('npx', ['wrangler','r2','object','put',`${config.r2_buckets[0].bucket_name}/${mediaId}`,'--local','--file',path,'--content-type','image/webp'], { stdio: 'inherit' });
   sql.push(`INSERT INTO media(id,owner_email,bytes,mime,name,created_at,width,height) VALUES(${quote(mediaId)},'editor@vanityvair.example',${statSync(path).size},'image/webp',${quote(filename+'.webp')},datetime('now'),${result.width},${result.height}) ON CONFLICT(id) DO UPDATE SET bytes=excluded.bytes,mime=excluded.mime,name=excluded.name,width=excluded.width,height=excluded.height;`);
   sql.push(`INSERT OR IGNORE INTO promotions(id,name,headline,description,url,image,active,position,format,alt) VALUES(${quote(id)},${quote(name)},'','','/about#promotions','',1,${Number(suffix)-101},${quote(format)},'');`);

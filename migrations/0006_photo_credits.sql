@@ -1,0 +1,2 @@
+ALTER TABLE media ADD COLUMN photographer TEXT NOT NULL DEFAULT '';
+ALTER TABLE media ADD COLUMN is_screenshot INTEGER NOT NULL DEFAULT 0 CHECK(is_screenshot IN (0,1));

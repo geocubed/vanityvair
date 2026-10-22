@@ -22,7 +22,10 @@ describe('image artwork validation', () => {
       expect(crop.sx + crop.sw).toBeLessThanOrEqual(2400.001); expect(crop.sy + crop.sh).toBeLessThanOrEqual(1600.001);
       expect(matchesFormat(crop.sw,crop.sh,format)).toBe(true);
     }
-    expect(matchesFormat(800,1200,'banner')).toBe(false);
+    expect(matchesFormat(1600,400,'banner')).toBe(true);
+    expect(matchesFormat(400,1600,'poster')).toBe(true);
+    expect(matchesFormat(1600,200,'banner')).toBe(false);
+    expect(matchesFormat(800,1200,'poster')).toBe(false);
   });
   it('rotates only active artwork in the right shape and handles empty or singleton pools', () => {
     const items = [{id:'a',active:1,image:'/media/a',format:'banner'},{id:'b',active:1,image:'/media/b',format:'banner'},{id:'c',active:1,image:'/media/c',format:'poster'},{id:'d',active:0,image:'/media/d',format:'banner'},{id:'e',active:1,image:'',format:'banner'}] as Promotion[];

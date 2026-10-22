@@ -9,7 +9,7 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   ctx.locals.user = null;
   ctx.locals.friendImages = [];
   ctx.locals.editionVisit = 0;
-  const publicPage = ctx.request.method === 'GET' && (path === '/' || path === '/archive' || path === '/about' || /^\/(stories|category|people)\/[^/]+\/?$/.test(path));
+  const publicPage = ctx.request.method === 'GET' && (path === '/' || path === '/gallery' || path === '/archive' || path === '/about' || /^\/(stories|category|people)\/[^/]+\/?$/.test(path));
   if (publicPage) {
     const previous = Number(ctx.cookies.get('vv-edition')?.value || 0);
     const visit = Number.isSafeInteger(previous) && previous >= 0 ? previous : 0;

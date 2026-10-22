@@ -1,0 +1,20 @@
+---
+import {captionParts} from '../lib/gallery-tags';
+import {galleryPosts} from '../lib/gallery';
+const posts=(await galleryPosts()).slice(0,4);
+const date=(value:string)=>new Date(value).toLocaleDateString('en-CA',{month:'short',day:'numeric',timeZone:'America/Vancouver'});
+---
+{posts.length>0&&<section class="gallery-shelf wrap" aria-labelledby="gallery-shelf-title">
+ <div class="section-heading"><h2 id="gallery-shelf-title">Latest from the Gallery</h2><a class="text-link" href="/gallery">View Gallery <span>↗</span></a></div>
+ <div class="gallery-shelf-posts">{posts.map(post=><article class="gallery-shelf-post">
+  <a class="gallery-shelf-photo" href={`/gallery#moment-${post.id}`} aria-label={`View ${post.author_name}’s moment`}><img src={`/media/${post.media_id}`} alt={post.description} width="600" height="600" loading="lazy" />{post.photos.length>1&&<span class="shelf-album-count">{post.photos.length} photos</span>}</a>
+  <div class="gallery-shelf-author"><a href={`/people/${post.author_slug}`} tabindex="-1" aria-hidden="true"><img class="contributor-portrait" src={post.author_avatar||'/profile-placeholder.svg'} alt="" width="28" height="28" /></a><a href={`/people/${post.author_slug}`}>{post.author_name}</a><time datetime={post.created_at}>{date(post.created_at)}</time></div>
+  {post.caption&&<p>{captionParts(post.caption).map(part=><a class:list={{'shelf-hashtag':!!part.tag}} href={part.tag?`/gallery?tag=${encodeURIComponent(part.tag)}`:`/gallery#moment-${post.id}`}>{part.text}</a>)}</p>}
+ </article>)}</div>
+</section>}
+<style>
+ .shelf-album-count{position:absolute;right:8px;top:8px;background:#0009;color:#fff;padding:5px 8px;border-radius:12px;font-size:10px}.shelf-hashtag{color:var(--red)}
+ .gallery-shelf{padding-block:48px 16px}.gallery-shelf-posts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:26px}.gallery-shelf-post{min-width:0}.gallery-shelf-photo{position:relative;display:block;background:#eee;overflow:hidden}.gallery-shelf-photo>img{aspect-ratio:1;height:auto;transition:transform .3s}.gallery-shelf-photo:hover>img{transform:scale(1.025)}.gallery-shelf-author{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:11px;font-weight:500}.gallery-shelf-author .contributor-portrait{width:28px;height:28px}.gallery-shelf-author>a:nth-child(2){min-width:0;overflow-wrap:anywhere}.gallery-shelf-author time{margin-left:auto;color:var(--muted);font-size:9px;white-space:nowrap;font-weight:400}.gallery-shelf-post>p{font-size:14px;line-height:1.55;margin:12px 0 0;overflow-wrap:anywhere;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.gallery-shelf .section-heading{align-items:center;gap:20px}.gallery-shelf .text-link{white-space:nowrap}
+ @media(max-width:1100px){.gallery-shelf-posts{grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 24px}}
+ @media(max-width:760px){.gallery-shelf{padding-block:32px 8px}.gallery-shelf-posts{gap:26px 18px}.gallery-shelf .section-heading h2{font-size:17px;max-width:200px;line-height:1.3}.gallery-shelf .text-link{font-size:9px}.gallery-shelf-author{flex-wrap:wrap;font-size:10px;gap:7px}.gallery-shelf-author time{width:100%;margin-left:35px}.gallery-shelf-post>p{font-size:13px}}
+</style>

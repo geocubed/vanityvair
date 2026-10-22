@@ -1,0 +1,33 @@
+---
+import SectionHeading from './SectionHeading.astro';
+import FriendImage from './FriendImage.astro';
+import StoryCard from './StoryCard.astro';
+import type {Story} from '../lib/types';
+const taglines:Record<string,string>={Achievements:'The wins, the firsts, the well-deserved standing ovations.',Announcements:'Heard it here first. Good news travels in good company.',Projects:'Things we’re making. Things we’re dreaming up. Things worth sharing.','All Stories':'Every big moment. Every little story.'};
+const {title,stories,grid=false,emptyMessage='A little quiet here. The next story could be yours.'}=Astro.props as {title:string;stories:Story[];grid?:boolean;emptyMessage?:string};
+---
+  <FriendImage />
+  <section class="category-page" aria-label={title}>
+    <SectionHeading title={title} tagline={taglines[title]} kicker={title==='All Stories'?'NOTHING GOOD GETS LOST HERE.':'FROM OUR PEOPLE'} />
+    <div class="category-stories wrap">
+      <slot />
+      {stories.length ? grid ? <div class="story-grid">{stories.map(story=><StoryCard story={story} />)}</div> : stories.map(story=><article class="category-story">
+        <a class="category-story-image" href={`/stories/${story.slug}`} aria-label={`Read ${story.title}`}><img src={story.hero || '/placeholder.svg'} alt={story.hero_alt} width="600" height="600" loading="lazy" /></a>
+        <div class="category-story-copy"><a class="eyebrow category" href={story.category?`/category/${story.category.toLowerCase()}`:'/archive'}>{story.category || 'From our people'}</a><h2><a href={`/stories/${story.slug}`}>{story.title}</a></h2>{story.deck&&<p>{story.deck}</p>}<div class="category-story-byline">By <a href={`/people/${story.author_slug}`}>{story.author_name}</a></div></div>
+      </article>) : <p class="empty-state">{emptyMessage}</p>}
+    </div>
+  </section>
+<style>
+  .category-stories{max-width:1280px;padding-block:54px 90px}
+  .category-story{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.2fr);gap:32px;align-items:center;padding-block:30px;border-bottom:1px solid var(--line)}
+  .category-story:first-child{padding-top:0}
+  .category-story:last-child{border:0}
+  .category-story-image{display:block;background:#eee}
+  .category-story-image img{aspect-ratio:1;object-fit:cover;height:auto}
+  .category-story-copy{max-width:860px;padding-right:24px}
+  .category-story-copy h2{font-family:var(--serif);font-size:clamp(26px,2.3vw,36px);font-weight:400;line-height:1.08;letter-spacing:-.4px;margin:10px 0 16px}
+  .category-story-copy h2 a:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
+  .category-story-copy>p{font-family:var(--sans);font-size:16px;line-height:1.45;margin:0 0 15px}
+  .category-story-byline{font-size:10px;font-weight:500;line-height:1.5;letter-spacing:1.8px;text-transform:uppercase}
+  @media(max-width:760px){.category-stories{padding-block:32px 48px}.category-story{grid-template-columns:1fr;gap:22px;padding-block:30px}.category-story-image img{aspect-ratio:1.25}.category-story-copy{padding-right:0}.category-story-copy h2{font-size:30px}.category-story-copy>p{font-size:15px}}
+</style>

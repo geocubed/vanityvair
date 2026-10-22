@@ -3,10 +3,10 @@ import Magazine from '../layouts/Magazine.astro';
 import StoryCard from '../components/StoryCard.astro';
 import FriendImage from '../components/FriendImage.astro';
 import CategoryShelf from '../components/CategoryShelf.astro';
+import GalleryShelf from '../components/GalleryShelf.astro';
 import {categories} from '../lib/types';
 import {publishedStories} from '../lib/store';
 const stories=await publishedStories();
-const hasPoster=Astro.locals.friendImages.some(item => item.format === 'poster');
 const lead=stories[0];
 ---
 <Magazine active="home" demo={stories.some(s=>s.id.startsWith('demo-'))}>
@@ -14,13 +14,13 @@ const lead=stories[0];
   {lead ? <>
   <section class="lead-section wrap" aria-label="Featured story"><a class="lead-photo" href={`/stories/${lead.slug}`} aria-label={`Read ${lead.title}`}><img src={lead.hero || '/placeholder.svg'} alt={lead.hero_alt} width="1500" height="1100" fetchpriority="high" /><span class="photo-note">THE SPOTLIGHT <span>01 / VV</span></span></a><div class="lead-copy"><span class="issue-mark">IN GOOD COMPANY</span><a class="eyebrow category" href={`/category/${lead.category.toLowerCase()}`}>{lead.category}</a><h1><a href={`/stories/${lead.slug}`}>{lead.title}</a></h1><div class="short-rule"></div><p class="lead-deck">{lead.deck}</p><p class="lead-byline">By <a href={`/people/${lead.author_slug}`}>{lead.author_name}</a></p><a class="read-story" href={`/stories/${lead.slug}`}>READ THE STORY <span>↗</span></a></div></section>
   <FriendImage />
-  <section class="latest-section wrap"><div class="section-heading"><div><span class="eyebrow">THE GROUP CHAT, ELEVATED.</span><h2>Word on the street.</h2></div><a class="text-link" href="/archive">All stories <span>↗</span></a></div><div class:list={['latest-layout',{'with-friend':hasPoster}]}><div class="latest-stories">{stories.slice(1,3).map((story,i)=><StoryCard story={story} number={i+2} />)}</div><FriendImage format="poster" placement="side" /></div></section>
+  <GalleryShelf />
+  <section class="latest-section wrap"><div class="section-heading"><div><span class="eyebrow">THE GROUP CHAT, ELEVATED.</span><h2>Word on the street.</h2></div><a class="text-link" href="/archive">All stories <span>↗</span></a></div><div class="latest-layout"><div class="latest-stories">{stories.slice(1,3).map((story,i)=><StoryCard story={story} number={i+2} />)}</div></div></section>
   <FriendImage offset={1} />
   <div class="category-sections wrap">{categories.map(category => <CategoryShelf category={category} stories={stories.filter(story => story.category === category)} />)}</div>
   </> : <section class="empty-state wrap"><h1>A new edition is on its way.</h1><p>Our people have stories to tell. Come back soon.</p><a href="/editor" class="button">Write the first story ↗</a></section>}
 </Magazine>
 <style>
   .category-sections{padding-block:64px 80px}
-  @media(min-width:761px){.latest-layout.with-friend{grid-template-columns:minmax(0,2.2fr) minmax(180px,.8fr)}}
   @media(max-width:760px){.category-sections{padding-block:42px 48px}}
 </style>

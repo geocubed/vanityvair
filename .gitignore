@@ -9,3 +9,11 @@ playwright-report/
 test-results/
 output/
 .DS_Store
+
+# Private content backups and database files
+backups/
+exports/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
