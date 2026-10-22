@@ -1,0 +1,39 @@
+{
+  "name": "vanity-vair",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --host 0.0.0.0",
+    "build": "astro build",
+    "preview": "astro preview --host 0.0.0.0",
+    "check": "astro check",
+    "test": "vitest run",
+    "db:migrate": "wrangler d1 migrations apply DB --local",
+    "db:seed": "node scripts/seed.mjs",
+    "db:seed:ads": "node scripts/seed-ads.mjs",
+    "setup": "npm run db:migrate && npm run db:seed && npm run db:seed:ads",
+    "deploy:staging": "node scripts/deploy.mjs staging",
+    "deploy:production": "node scripts/deploy.mjs production"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.4.2",
+    "@tiptap/core": "^3.0.0",
+    "@tiptap/extension-image": "^3.0.0",
+    "@tiptap/extension-placeholder": "^3.0.0",
+    "@tiptap/starter-kit": "^3.0.0",
+    "astro": "^7.4.2",
+    "jose": "^6.0.0",
+    "sanitize-html": "^2.17.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@cloudflare/workers-types": "latest",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^26.6.5",
+    "@types/sanitize-html": "^2.16.0",
+    "sharp": "^0.35.5",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0",
+    "wrangler": "^4.0.0"
+  }
+}

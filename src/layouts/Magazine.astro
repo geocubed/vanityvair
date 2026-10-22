@@ -1,0 +1,74 @@
+---
+import '../styles/global.css';
+import SiteFooter from '../components/SiteFooter.astro';
+import FriendImage from '../components/FriendImage.astro';
+const {title='Good people. Great stories.', description='A magazine for our people. Achievements, announcements, projects, and a little well-deserved attention.', active='', demo=true, image=''}=Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} — Vanity Vair</title><meta name="description" content={description} />
+    <meta name="theme-color" content="#080808" /><meta property="og:title" content={`${title} — Vanity Vair`} /><meta property="og:description" content={description} /><meta property="og:type" content="website" />
+    {image && <meta property="og:image" content={image} />}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="header-top">
+        <button class="header-action header-write" type="button" id="subscribe-button">SUBSCRIBE</button>
+        <a class="wordmark" href="/" aria-label="Vanity Vair home">VANITY VAIR</a>
+        <div class="header-tools"><a class="header-action header-promos" href="/about#promotions">PROMOTIONS</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-drawer"><span>MENU</span><span class="hamburger" aria-hidden="true"><i></i><i></i></span></button></div>
+      </div>
+      <div class="header-bottom"><nav aria-label="Main navigation"><a class:list={{selected:active==='all'}} href="/archive">ALL STORIES</a><a class:list={{selected:active==='Achievements'}} href="/category/achievements">ACHIEVEMENTS</a><a class:list={{selected:active==='Announcements'}} href="/category/announcements">ANNOUNCEMENTS</a><a class:list={{selected:active==='Projects'}} href="/category/projects">PROJECTS</a></nav></div>
+    </header>
+    <button class="drawer-backdrop" type="button" tabindex="-1" aria-label="Close menu"></button>
+    <aside class="site-drawer" id="site-drawer" aria-label="Site menu" aria-hidden="true" inert>
+      <div class="drawer-heading"><span>EXPLORE VANITY VAIR</span><button type="button" class="drawer-close" aria-label="Close menu">CLOSE <b aria-hidden="true">×</b></button></div>
+      <nav class="drawer-categories" aria-label="Categories">
+        <a href="/category/achievements">ACHIEVEMENTS <span aria-hidden="true">＋</span></a>
+        <a href="/category/announcements">ANNOUNCEMENTS <span aria-hidden="true">＋</span></a>
+        <a href="/category/projects">PROJECTS <span aria-hidden="true">＋</span></a>
+        <a href="/archive">ALL STORIES</a>
+      </nav>
+      <p class="drawer-more">THE REST</p>
+      <nav class="drawer-more-links" aria-label="More links">
+        <a href="/about">ABOUT THE MAGAZINE</a><a href="/about#promotions">FRIEND-POWERED PROMOTIONS</a><a href="/archive#search">SEARCH THE ARCHIVE</a><a href="/editor">THE WRITING DESK · SIGN IN</a>
+      </nav>
+      <p class="drawer-note">An independent parody publication, made by and for our favourite people.</p>
+    </aside>
+    <dialog class="subscribe-dialog" id="subscribe-dialog" aria-labelledby="subscribe-title">
+      <form method="dialog"><button class="subscribe-close" aria-label="Close">×</button><p class="eyebrow">A NOTE FROM THE EDITORS</p><h2 id="subscribe-title">haha should we tho...?</h2><button class="button" value="close">Fair enough</button></form>
+    </dialog>
+    <main id="main"><slot /></main>
+    {active !== 'home' && Astro.url.pathname !== '/about' && !Astro.url.pathname.startsWith('/preview/') && <FriendImage offset={2} />}
+    <SiteFooter demo={demo} />
+    <script>
+      document.querySelectorAll<HTMLAnchorElement>('a[href^="/category/"]').forEach(a=>{ if(a.pathname===location.pathname)a.setAttribute('aria-current','page'); });
+      const menuToggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
+      const drawer = document.querySelector<HTMLElement>('#site-drawer');
+      const backdrop = document.querySelector<HTMLButtonElement>('.drawer-backdrop');
+      const closeButton = document.querySelector<HTMLButtonElement>('.drawer-close');
+      const subscribeButton = document.querySelector<HTMLButtonElement>('#subscribe-button');
+      const subscribeDialog = document.querySelector<HTMLDialogElement>('#subscribe-dialog');
+      const setMenuOpen = (open: boolean) => {
+        if (!menuToggle || !drawer || !backdrop) return;
+        menuToggle.setAttribute('aria-expanded', String(open));
+        drawer.setAttribute('aria-hidden', String(!open));
+        drawer.inert = !open;
+        backdrop.classList.toggle('is-visible', open);
+        document.body.classList.toggle('menu-open', open);
+        if (open) closeButton?.focus(); else menuToggle.focus();
+      };
+      menuToggle?.addEventListener('click', () => setMenuOpen(menuToggle.getAttribute('aria-expanded') !== 'true'));
+      closeButton?.addEventListener('click', () => setMenuOpen(false));
+      backdrop?.addEventListener('click', () => setMenuOpen(false));
+      drawer?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setMenuOpen(false)));
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && menuToggle?.getAttribute('aria-expanded') === 'true') setMenuOpen(false);
+      });
+      subscribeButton?.addEventListener('click', () => subscribeDialog?.showModal());
+    </script>
+  </body>
+</html>

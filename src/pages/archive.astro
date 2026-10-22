@@ -1,0 +1,9 @@
+---
+import Magazine from '../layouts/Magazine.astro';
+import StoryCard from '../components/StoryCard.astro';
+import {publishedStories} from '../lib/store';
+const q=(Astro.url.searchParams.get('q')||'').trim().slice(0,150);
+const all=await publishedStories();
+const stories=all.filter(s=>`${s.title} ${s.deck} ${s.author_name} ${s.body.replace(/<[^>]*>/g,' ')}`.toLowerCase().includes(q.toLowerCase()));
+---
+<Magazine title="The archive" active="all" demo={all.some(s=>s.id.startsWith('demo-'))}><section class="archive-page wrap"><div class="page-heading"><span class="eyebrow">NOTHING GOOD GETS LOST HERE.</span><h1>The archive<span class="red-period">.</span></h1><p>Every big moment. Every little story.</p></div><form id="search" class="archive-search" action="/archive"><label for="story-search" class="eyebrow">FIND A STORY</label><div><input id="story-search" type="search" name="q" value={q} placeholder="A name, an idea, a bit of good news…" maxlength="150" /><button class="button" type="submit">Search ↗</button></div></form>{q&&<p class="results-count">{stories.length} {stories.length===1?'story':'stories'} for “{q}” · <a href="/archive">Clear search</a></p>}{stories.length?<div class="story-grid">{stories.map(story=><StoryCard story={story} />)}</div>:<div class="empty-state"><h2>No stories found.</h2><p>Try another name or a different word.</p></div>}</section></Magazine>

@@ -1,0 +1,12 @@
+---
+import Magazine from '../../layouts/Magazine.astro';
+import Article from '../../components/Article.astro';
+import {workingStory} from '../../lib/store';
+import {canEdit} from '../../lib/auth';
+import {env} from 'cloudflare:workers';
+import type {User} from '../../lib/types';
+const story=await workingStory(Astro.params.id!);
+if(!story||!canEdit(Astro.locals.user!,story)) return new Response('Not found',{status:404});
+const person=await env.DB.prepare('SELECT * FROM users WHERE email=?').bind(story.author_email).first<User>();
+---
+<Magazine title={`Preview: ${story.title}`}><Article story={{...story,author_name:person?.name,author_slug:person?.slug}} preview /></Magazine>

@@ -1,0 +1,23 @@
+---
+import type {Story} from '../lib/types';
+import {dateLabel,readingTime} from '../lib/content';
+import FriendImage from './FriendImage.astro';
+const {story,preview=false}=Astro.props as {story:Story;preview?:boolean};
+const hasPoster=!preview && Astro.locals.friendImages.some(item => item.format === 'poster');
+---
+<article class="article-page wrap">
+  {preview&&<div class="article-preview-note">PRIVATE PREVIEW · Only the editorial team can see this version. <a href={`/editor?story=${story.id}`}>Back to writing ↗</a></div>}
+  <header class="article-heading"><span class="eyebrow category">{story.category||'FROM OUR PEOPLE'}</span><h1>{story.title}</h1><p class="article-deck">{story.deck}</p><div class="article-meta"><span>By <a href={`/people/${story.author_slug}`}>{story.author_name}</a></span><span>{dateLabel(story.published_at||story.created_at)}</span><span>{readingTime(story.body)} min read</span></div></header>
+  {story.hero&&<figure class="article-hero"><img src={story.hero} alt={story.hero_alt} width="1600" height="1100" fetchpriority="high" />{story.caption&&<figcaption>{story.caption}</figcaption>}</figure>}
+  <div class:list={['article-content',{'with-friend':hasPoster}]}><aside class="article-rail"><span class="eyebrow">PASS IT ON</span><button class="share-button" type="button">Share story ↗</button><a href="/archive">More stories ↗</a></aside><div class="prose" set:html={story.body}></div>{hasPoster && <div class="article-friend-rail"><FriendImage format="poster" placement="side" /></div>}</div>
+  <div class="article-end"><p>Good stories deserve good company.</p><a class="text-link" href="/archive">Keep reading ↗</a></div>
+</article>
+<style>
+  @media(min-width:1101px){.article-content.with-friend{grid-template-columns:100px minmax(0,680px) 220px;gap:36px;padding-right:0}.article-friend-rail{padding-top:8px}}
+  @media(max-width:1100px){.article-friend-rail{display:none}}
+</style>
+<script>
+  document.querySelector('.share-button')?.addEventListener('click',async()=>{
+    try { if(navigator.share) await navigator.share({title:document.title,url:location.href}); else if(navigator.clipboard) { await navigator.clipboard.writeText(location.href); document.querySelector('.share-button')!.textContent='Link copied ✓'; } else { window.prompt('Copy this story link',location.href); } } catch { /* User dismissed the share sheet. */ }
+  });
+</script>

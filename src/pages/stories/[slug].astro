@@ -1,0 +1,8 @@
+---
+import Magazine from '../../layouts/Magazine.astro';
+import Article from '../../components/Article.astro';
+import {publishedStories} from '../../lib/store';
+const story=(await publishedStories()).find(s=>s.slug===Astro.params.slug);
+if(!story) return Astro.redirect('/404');
+---
+<Magazine title={story.title} description={story.deck} active={story.category} image={story.hero} demo={story.id.startsWith('demo-')}><Article story={story} /></Magazine>

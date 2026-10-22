@@ -1,0 +1,23 @@
+---
+import { selectPromotion } from '../lib/promotion';
+import type { PromotionFormat } from '../lib/types';
+interface Props { format?: PromotionFormat; offset?: number; placement?: 'page' | 'side' }
+const { format = 'banner', offset = 0, placement = 'page' } = Astro.props;
+const item = selectPromotion(Astro.locals.friendImages || [], format, Astro.locals.editionVisit || 0, offset);
+---
+{item && <aside class:list={['friend-image', `friend-${format}`, { wrap: placement === 'page' && format === 'banner' }]} aria-label="From our friends">
+  <p>FROM OUR FRIENDS</p>
+  {item.url ? <a href={item.url} rel="noopener noreferrer"><img src={item.image} alt={item.alt || item.name} width={format === 'banner' ? 1600 : 800} height={format === 'banner' ? 200 : 1200} loading="lazy" decoding="async" /></a> : <img src={item.image} alt={item.alt || item.name} width={format === 'banner' ? 1600 : 800} height={format === 'banner' ? 200 : 1200} loading="lazy" decoding="async" />}
+</aside>}
+<style>
+  .friend-image{min-width:0}
+  .friend-image p{font-size:7px;font-weight:500;letter-spacing:1.8px;text-align:center;color:var(--muted);margin:0 0 10px}
+  .friend-image img{display:block;width:100%;height:auto;object-fit:contain}
+  .friend-image a{display:block}
+  .friend-image a:focus-visible{outline:2px solid var(--red);outline-offset:4px}
+  .friend-banner{margin-block:30px 10px}
+  .friend-banner img{height:auto;aspect-ratio:8/1;object-fit:cover;object-position:center}
+  .friend-poster{width:100%;max-width:260px;align-self:start;justify-self:center}
+  .friend-poster img{aspect-ratio:2/3}
+  @media(max-width:760px){.friend-banner{margin-block:24px 0}.friend-poster{display:none}}
+</style>

@@ -1,0 +1,9 @@
+---
+import Magazine from '../../layouts/Magazine.astro';
+import StoryCard from '../../components/StoryCard.astro';
+import {author,publishedStories} from '../../lib/store';
+const person=await author(Astro.params.slug!);
+if(!person)return Astro.redirect('/404');
+const stories=(await publishedStories()).filter(s=>s.author_email===person.email);
+---
+<Magazine title={person.name} demo={person.email.endsWith('.example')}><section class="archive-page wrap"><div class="page-heading author-heading"><span class="author-monogram">{person.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</span><span class="eyebrow">ONE OF OUR PEOPLE</span><h1>{person.name}<span class="red-period">.</span></h1><p>{person.bio}</p>{person.link&&<a class="text-link" href={person.link} rel="noopener noreferrer">Elsewhere ↗</a>}</div><div class="section-heading"><h2>The stories.</h2><span class="eyebrow">{stories.length} AND COUNTING</span></div><div class="story-grid">{stories.map(story=><StoryCard story={story} />)}</div></section></Magazine>

@@ -1,0 +1,10 @@
+---
+import type { Story } from '../lib/types';
+import {readingTime} from '../lib/content';
+interface Props { story: Story; number?: number }
+const { story, number }=Astro.props;
+---
+<article class="story-card">
+  <a class="card-image" href={`/stories/${story.slug}`} tabindex="-1" aria-hidden="true"><img src={story.hero || '/placeholder.svg'} alt={story.hero_alt} loading="lazy" width="800" height="600" />{number && <span class="card-number">0{number}</span>}</a>
+  <div class="card-copy"><a class="eyebrow category" href={story.category?`/category/${story.category.toLowerCase()}`:'/archive'}>{story.category || 'From our people'}</a><h3><a href={`/stories/${story.slug}`}>{story.title}</a></h3><p>{story.deck}</p><div class="byline">By <a href={`/people/${story.author_slug}`}>{story.author_name}</a><span>{readingTime(story.body)} min read</span></div></div>
+</article>
