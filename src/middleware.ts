@@ -1,6 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
-import { accessEmail } from './lib/auth';
+import {sessionUser} from './lib/site-auth';
 import type { User } from './lib/types';
 import { promotions } from './lib/store';
 export const onRequest = defineMiddleware(async (ctx, next) => {
@@ -23,12 +23,13 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     const previewRole = ctx.cookies.get('vv-preview-role')?.value;
     const email = ctx.locals.localPreview
       ? (previewRole === 'visitor' ? null : previewRole === 'contributor' ? 'maya@vanityvair.example' : 'editor@vanityvair.example')
-      : await accessEmail(ctx.request, env.ACCESS_TEAM_DOMAIN, env.ACCESS_AUD);
-    if (email) ctx.locals.user = await env.DB.prepare('SELECT * FROM users WHERE email=? AND active=1').bind(email).first<User>();
+      : null;
+    if (email) ctx.locals.user = await env.DB.prepare('SELECT email,name,role,bio,slug,link,active,avatar FROM users WHERE email=? AND active=1').bind(email).first<User>();
+    if(!ctx.locals.localPreview)ctx.locals.user=await sessionUser(env.DB,ctx.cookies.get(ctx.url.protocol==='https:'?'__Host-vv-session':'vv-session')?.value);
     if (isPrivate && !ctx.locals.user) {
       return path.startsWith('/api/')
         ? Response.json({ error: 'Sign in with an invited email address to continue.' }, { status: 401 })
-        : new Response('Your email is not on the editorial team. Ask the owner to invite you, then sign in through Cloudflare Access.', { status: 401 });
+        : ctx.locals.localPreview ? new Response('Sign in with an invited account.',{status:401}) : ctx.redirect('/sign-in',303);
     }
   }
   if (path.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(ctx.request.method)) {
@@ -43,6 +44,6 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   if (isPrivate || path.startsWith('/media/')) response.headers.set('Cache-Control', 'private, no-store');
   if (publicPage) response.headers.set('Cache-Control', 'private, no-store');
-  if (env.APP_ENV !== 'production' || isPrivate) response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  if (env.APP_ENV !== 'production' || isPrivate || path==='/sign-in' || path.startsWith('/auth/')) response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   return response;
 });

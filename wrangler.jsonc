@@ -3,24 +3,70 @@
   "name": "vanity-vair-local",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-10-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "assets": { "directory": "./dist/client", "binding": "ASSETS" },
-  "vars": { "APP_ENV": "local", "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "" },
-  "d1_databases": [{ "binding": "DB", "database_name": "vanity-vair-local", "database_id": "00000000-0000-0000-0000-000000000001", "migrations_dir": "migrations" }],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "vanity-vair-local-media" }],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "APP_ENV": "local",
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "vanity-vair-local",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "vanity-vair-local-media"
+    }
+  ],
   "env": {
     "staging": {
       "name": "vanity-vair-staging",
-      "vars": { "APP_ENV": "staging", "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "" },
-      "d1_databases": [{ "binding": "DB", "database_name": "vanity-vair-staging", "database_id": "REPLACE_STAGING_DATABASE_ID", "migrations_dir": "migrations" }],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "vanity-vair-staging-media" }]
+      "vars": {
+        "APP_ENV": "staging"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "vanity-vair-staging",
+          "database_id": "777861b8-f6a1-4b0f-84d6-aaf945992ceb",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "workers_dev": true,
+      "preview_urls": false
     },
     "production": {
       "name": "vanity-vair",
       "workers_dev": false,
-      "vars": { "APP_ENV": "production", "ACCESS_TEAM_DOMAIN": "", "ACCESS_AUD": "" },
-      "d1_databases": [{ "binding": "DB", "database_name": "vanity-vair-production", "database_id": "REPLACE_PRODUCTION_DATABASE_ID", "migrations_dir": "migrations" }],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "vanity-vair-production-media" }]
+      "vars": {
+        "APP_ENV": "production"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "vanity-vair-production",
+          "database_id": "68083fdf-f604-4ca8-9985-ee8bab132473",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "preview_urls": false,
+      "routes": [
+        {
+          "pattern": "vanityvair.com",
+          "custom_domain": true
+        }
+      ]
     }
   }
 }

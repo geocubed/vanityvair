@@ -13,7 +13,8 @@ it('protects portrait ownership, serves the chosen byline photo publicly, and re
   expect((await profile(other.url)).status).toBe(403);
   expect((await fetch(`${base}${own.url}`,{headers:headers('visitor')})).status).toBe(404);
   expect((await profile(own.url)).status).toBe(200);
-  expect((await fetch(`${base}${own.url}`,{headers:headers('visitor')})).status).toBe(200);
+  const served=await fetch(`${base}${own.url}`,{headers:headers('visitor')});
+  expect(served.status).toBe(200);expect(Buffer.from(await served.arrayBuffer())).toEqual(bytes);
   expect((await fetch(`${base}/api/media/${own.id}`,{method:'DELETE',headers:headers('owner')})).status).toBe(400);
   const html=await(await fetch(`${base}/stories/a-little-film-a-very-big-night`)).text();expect(html).toContain(own.url);expect(html).toContain('byline-portrait');
   expect((await profile('')).status).toBe(200);

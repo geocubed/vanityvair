@@ -1,6 +1,9 @@
 # Vanity Vair
 
-An independent friends’ magazine: Achievements, Announcements, Projects, and handpicked business promotions. Built with Astro, Cloudflare Workers, D1, a private R2 bucket, and a Tiptap writing desk.
+> **Launch configuration update (October 22, 2026): domain-only budget.** Production and staging now store uploaded photo bytes in D1 (`0011_database_photos.sql`), with a 300 MB upload cap. Do not enable R2, Workers Paid, or other paid services. For the deployed site, export D1 to back up both content and photos; test restoration in staging. Free service limits may interrupt availability rather than trigger an upgrade.
+
+
+An independent friends’ magazine: Achievements, Announcements, Projects, and handpicked business promotions. Built with Astro, Cloudflare Workers Free, D1 Free, and a Tiptap writing desk.
 
 For day-to-day publishing, contributor invitations, launch steps, updates, and backups, start with the [Owner Guide](docs/OWNER_GUIDE.md).
 
@@ -14,7 +17,7 @@ npm run dev
 
 Open **http://localhost:4321/** on the laptop. On a phone connected to the same Wi-Fi, open **http://10.0.0.50:4321/**. This address belongs to the current Wi-Fi connection and may change; use the `Network` URL printed by Astro if it does. Keep the laptop awake and the server running. Guest Wi-Fi isolation, a VPN, or a macOS firewall rule can prevent the phone connecting.
 
-The writing desk is at `/editor`. A yellow local-preview banner lets you switch between the sample owner and Maya, a contributor. It does **not send email**. This shortcut exists only when both Astro development mode and `APP_ENV=local` are true. A built deployment always requires a verified Access token and an active database user.
+The writing desk is at `/editor`. A yellow local-preview banner lets you switch between the sample owner and Maya, a contributor. It does **not send email**. This shortcut exists only when both Astro development mode and `APP_ENV=local` are true. A built deployment requires a valid site session and an active database user.
 
 All current contributors, business names, and stories are fictional samples. Sample photographs are served from Unsplash; they are illustrative and do not portray the fictional authors. The demo seed runs only against local storage and uses `INSERT OR IGNORE`, so rerunning setup does not overwrite edits. No local content is deployed automatically.
 
@@ -48,9 +51,7 @@ The public page shows up to the latest 200 moments, with compact photo carousels
 
 Every contributor can open **My profile** in the writing desk to upload or remove their own portrait. Photos display as black-and-white circles above article bylines and on contributor pages. Saving a portrait makes that photo public; replacing or removing it revokes public access unless a story or ad also uses it. Apply migration `0007_profile_photos.sql` before deploying this version.
 
-In **Our people**, enter a friend’s name, email, bio, and optional HTTPS portfolio URL. Add the same email to the Cloudflare Access allow-list. Share `https://vanityvair.com/editor`; they enter their email, receive a code, and start writing. Inviting a person in this app does not send a separate invitation email or modify Cloudflare policies automatically.
-
-To update a contributor’s byline, enter their existing email and updated details in the same form. **Remove editor access** deactivates them immediately in the app; also remove them from Access. Their public stories remain attributed. There is one owner; its initial account is created during production setup. The owner account cannot be deactivated through this UI.
+In **Our people**, enter the friend's details, then select **Invitation / reset link** on their card. Share it privately. They choose a password and sign in at `/sign-in`; the site sends no invitation emails. Removing their access blocks existing sessions immediately. Existing published bylines remain attributed.
 
 ### Ads
 
@@ -66,59 +67,37 @@ After local migration and the normal demo seed, run `npm run db:seed:ads` to add
 
 ### Photos and storage
 
-Supported browser photos are converted to WebP (JPEG fallback), resized to at most 2,048 pixels on the long edge, then repeatedly adjusted until **500,000 bytes or less**. Only the resulting web photo uploads; original files and location metadata are not copied to R2. Transparent images are flattened onto white. JPEG, PNG and WebP work; HEIC/HEIF depends on browser decoding and otherwise gets a clear JPEG-export message. Raw files, GIF animation, and video uploads are excluded. Input files over 40 MB or 100 million pixels are rejected to protect phone memory.
+Supported browser photos are converted to WebP (JPEG fallback), resized to at most 2,048 pixels on the long edge, then repeatedly adjusted until **500,000 bytes or less**. Only the resulting web photo uploads; original files and location metadata are not uploaded. Transparent images are flattened onto white. JPEG, PNG and WebP work; HEIC/HEIF depends on browser decoding and otherwise gets a clear JPEG-export message. Raw files, GIF animation, and video uploads are excluded. Input files over 40 MB or 100 million pixels are rejected to protect phone memory.
 
-The server independently bounds the request size, checks JPEG/WebP signatures, authorizes media references, and stores media in a private bucket. Draft photos require the uploader or owner. Public access is allowed only while a published article or active promotion references the image. Media responses are private/no-store so unpublishing revokes subsequent access; someone who already downloaded an image still has that copy.
+The server independently bounds the request size, checks JPEG/WebP signatures, authorizes media references, and stores media in the private D1 database. Draft photos require the uploader or owner. Public access is allowed only while a published article or active promotion references the image. Media responses are private/no-store so unpublishing revokes subsequent access; someone who already downloaded an image still has that copy.
 
-**Photo library** shows usage. A database trigger stops new uploads at **7 GB** across the site; the meter warns before that. The owner can remove unused web photos after confirmation. Images referenced by a draft, published story, or promotion cannot be deleted. Keep photographic originals elsewhere.
+**Photo library** shows usage. A database trigger stops new uploads at **300 MB** across the site; the meter warns before that. The owner can remove unused web photos after confirmation. Images referenced by a draft, published story, or promotion cannot be deleted. Keep photographic originals elsewhere.
 
-## Separate Cloudflare environments
+## Hosting, sign-in, budget, and backups
 
-Nothing has been deployed to Cloudflare. Development data persists in `.wrangler/state`; staging and production have independent D1/R2 bindings in `wrangler.jsonc`. The deployment scripts intentionally refuse to run with placeholder database IDs, missing Access settings, or an unconfigured production hostname.
+See [Owner Guide](docs/OWNER_GUIDE.md) for the current deployment and recovery procedure. Staging and production use Workers Free and D1 Free, with uploaded photo bytes stored in 32 KB D1 chunks so SQL exports remain restorable. The upload cap is 300 MB; individual photos remain limited to 500 KB. No deployed R2 binding is configured. Local sample assets retain local R2 simulation for compatibility.
 
-After visual approval:
+Use the site's invitation-only email/password sign-in at `/sign-in`. There is no Cloudflare Access or paid email dependency. Create a person in **Our people**, generate their single-use 24-hour **Invitation / reset link**, and share it privately. Passwords require 14–128 characters. Sessions use secure HttpOnly cookies and expire after seven days. Removing an account blocks its existing sessions; resetting a password revokes them. Password verifiers use salted PBKDF2 at Workers' supported 100,000-iteration ceiling plus an environment-specific HMAC pepper stored as the private `AUTH_PEPPER` Worker secret.
 
-1. Authenticate Wrangler with the owner’s Cloudflare account. Keep Workers on its **Free** plan. Enable R2 **Standard** storage and Zero Trust **Free** as appropriate for the account. Check the current plan/seat allowances before enabling services.
-2. Create `vanity-vair-staging` and `vanity-vair-production` D1 databases, and matching private `vanity-vair-staging-media` / `vanity-vair-production-media` R2 buckets. Replace only the matching environment’s database ID in `wrangler.jsonc`. Do not enable `r2.dev` access or attach a public bucket custom domain.
-3. Create a Cloudflare Access application on each deployed hostname for `/editor*`, `/api/*`, and `/preview/*`. Enable **One-time PIN** and restrict its Allow policy to specific invited emails. For staging, protect the whole hostname if the preview should be private. Fill `ACCESS_TEAM_DOMAIN` (e.g. `your-team.cloudflareaccess.com`) and the application audience `ACCESS_AUD` for that environment. A real email-code test is required before launch.
-4. Apply migrations to each remote database explicitly. Example for staging:
-
-   ```sh
-   npx wrangler d1 migrations apply DB --env staging --remote
-   ```
-
-5. Add the real owner to `users` in that database, using Cloudflare’s D1 console or a securely prepared SQL file. Required fields are `email`, `name`, `role='owner'`, `slug`, and `active=1`; bio/link may be empty. The email must match the Access identity. **Never seed the local sample accounts into production.**
-6. Run `npm run deploy:staging`. Verify the sign-in flow with the real invited email; check that an uninvited user cannot reach the editor, APIs, private previews, or draft media. A forged JWT and the local-preview cookie must fail on the built deployment.
-7. After approval, add `routes: [{ "pattern": "vanityvair.com", "custom_domain": true }]` inside `env.production`. Keep `workers_dev=false`, disable unauthenticated preview hostnames, then run `npm run deploy:production`. Verify HTTPS and decide on `www` redirect in Cloudflare. Existing mail/DNS records should be preserved.
-
-The Worker independently verifies JWT signature, issuer, audience, expiry, and active database membership. The API enforces roles/ownership, checks write-request Origin, sanitizes body HTML, validates links, and performs parameterized SQL writes. Do not rely solely on Access protecting the editor’s HTML page: protect the API and preview paths too.
-
-## Costs and limits
-
-Target: **$0 monthly service cost at small publication scale**, plus the domain. This is not a contractual zero-bill guarantee.
-
-Published Cloudflare allowances checked during implementation:
-
-- [Workers Free](https://developers.cloudflare.com/workers/platform/pricing/): 100,000 dynamic requests/day. Keep the account on Free; exhaustion can interrupt service rather than automatically justify upgrading.
-- [D1 Free](https://developers.cloudflare.com/d1/platform/pricing/): 5 million rows read/day, 100,000 rows written/day, 5 GB total storage. Free-tier query exhaustion returns errors until reset.
-- [R2 Standard](https://developers.cloudflare.com/r2/pricing/): 10 GB-month storage, 1 million Class A and 10 million Class B operations/month, free egress. R2 usage above included allowances is billable. The 7 GB app limit covers tracked uploads only, not other account buckets, failed-delete orphans, backups, or operation counts.
-- [Budget alerts](https://developers.cloudflare.com/billing/manage/budget-alerts/) notify; they **do not cap or pause usage**. No R2 account spending hard-stop has been verified. Configure available alerts and review usage before launch. If absolutely no possible overage charge is acceptable, R2 must remain disabled until a hard-stop alternative is selected.
-
-The build uses the passthrough image service; it does not enable Cloudflare Images or a paid image-transformation service. Database usage includes drafts and snapshots; media is not duplicated for publication. Backups need their own storage budget.
-
-## Backup, export, and recovery
-
-The current GitHub repository is public and contains source and fictional fixtures only. Keep source and `package-lock.json` in version control; store all real content backups privately outside the repository. Do not commit `.dev.vars`, `.env`, local database state, exports, tokens, or private drafts.
-
-Export the selected remote database before migrations and periodically after publishing:
+Keep `AUTH_PEPPER` securely outside the repository and retain it for recovery. Never rotate it casually: existing passwords need it. Initial owner setup/recovery is available to the authenticated Cloudflare account owner:
 
 ```sh
-npx wrangler d1 export DB --env production --remote --output /absolute/private/backup/vanity-vair.sql
+node scripts/owner-invite.mjs production OWNER_EMAIL /absolute/private/owner-setup.html
 ```
 
-This SQL export includes posts, snapshots, people, promotions, and the media inventory/references. Copy the private R2 objects named by `media.id` to the same private backup location using the R2 dashboard or `wrangler r2 object get vanity-vair-production-media/OBJECT_ID --remote --file /absolute/private/backup/OBJECT_ID`. Verify the downloaded bytes against the inventory. There is no scheduled backup service configured in this first version.
+Open the generated private file locally, follow its single-use link, and choose the password yourself. Do not share the file or put passwords in chat.
 
-Test a restore into a new staging database/bucket before treating a backup as usable. Import with `wrangler d1 execute ... --file ...`, restore objects under the original IDs, and bind the staging app to those resources. Do not import on top of a running production database. Media IDs and references must stay aligned. Cloudflare D1 Time Travel may provide additional recovery, but should not replace independent exports.
+Apply all migrations explicitly to the selected environment, build/deploy with `npm run deploy:staging` or `npm run deploy:production`. The deploy script requires the environment's database ID and authentication secret. First-time provisioning may deploy a sign-in-disabled Worker before setting its secret; all editorial routes fail closed until configured. A GitHub push alone does not deploy.
+
+**Only the yearly domain renewal is budgeted.** Keep Workers Free; do not activate R2, paid Workers, Images, paid email, or other metered subscriptions. At free limits, requests or writes can stop. [D1 Free limit behavior](https://developers.cloudflare.com/d1/reference/faq/) and [Workers limits](https://developers.cloudflare.com/workers/platform/limits/). A separately activated Zero Trust subscription is not used by this app and should be reviewed separately.
+
+A private D1 export includes articles, photos, people, sessions, and invitations:
+
+```sh
+npx wrangler d1 export DB --env production --remote --output /absolute/private/backup/database.sql
+```
+
+Export before migrations and regularly while publishing. Keep another private copy and the authentication secret on a separate device or private backup service. Never commit exports to this public repository. Test importing into an isolated staging database before relying on backups. Revoke imported sessions/invitations before exposing a restored environment. Legacy local R2 fixtures are not production content. No automatic off-site backup service is configured.
 
 ## Verification
 

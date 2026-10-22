@@ -3,7 +3,7 @@ import { photoCredit, type PhotoMetadata } from './photo-metadata';
 import { categories } from './types';
 import { videoEmbed } from './video';
 export { MAX_IMAGE_BYTES } from './content-constants';
-export const STORAGE_CAP = 7_000_000_000;
+export const STORAGE_CAP = 300_000_000;
 export const slugify = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 100) || 'untitled';
 export const safeLink = (s: string) => {
   if (s.startsWith('/') && !s.startsWith('//') && !/[\\\s]/.test(s)) return s;

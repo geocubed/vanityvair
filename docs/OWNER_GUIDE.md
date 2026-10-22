@@ -1,26 +1,25 @@
 # Running Vanity Vair
 
+> **Launch configuration update (October 22, 2026): domain-only budget.** Production and staging now store uploaded photo bytes in D1 (`0011_database_photos.sql`), with a 300 MB upload cap. Do not enable R2, Workers Paid, or other paid services. For the deployed site, export D1 to back up both content and photos; test restoration in staging. Free service limits may interrupt availability rather than trigger an upgrade.
+
+
 Last checked: October 22, 2026.
 
-## Where things stand
+## Hosting and budget
 
-The site works locally at `http://localhost:4321`. The yellow preview banner and account switcher use fictional accounts; they are not real email sign-in. Production and staging configuration still contains placeholder database IDs and empty Cloudflare Access settings. The deployment scripts deliberately refuse to publish this configuration.
+The hosted site uses Cloudflare Workers Free and D1 Free. Both writing and uploaded photo bytes live in D1. Uploads stop at 300 MB; every photo is compressed to 500 KB or less. Keep the account on Workers Free. Do not enable R2, Cloudflare Images, paid email services, or a paid Workers plan. Free service limits can interrupt the site or prevent uploads; they do not justify an automatic upgrade.
 
-The GitHub repository is public. It holds application code, schema migrations, fonts, and fictional sample content. Articles written in the editor, people you invite, their email addresses, and uploaded photos live in the database and media storage. They are not included in a Git push. Never put content exports, secrets, or private backups into the repository.
+The public GitHub repository contains source, migrations, and fictional fixtures only. Real content, contributor emails, password verifiers, invitations, and photo bytes belong in the private database. Never commit exports, invitation links, or secrets.
 
-You can practise locally now. Start real publishing after the hosted site, real owner account, sign-in, and backups have been checked. Local writing is not automatically transferred to production. Keep original photos and a separate copy of any real writing you start before launch.
+The writing desk uses the site's own invitation-only login. Cloudflare Access/Zero Trust is not required. If a separate Zero Trust subscription was activated in the Cloudflare dashboard, review that account subscription independently; the website does not use it.
 
-## First launch: do these in order
+## First launch
 
-1. **Set up Cloudflare staging.** Create its separate D1 database and private R2 bucket, and configure its Access team and application audience in `wrangler.jsonc`. Protect the staging hostname with Access while testing. This is a test copy, not the final public site.
-2. **Apply every migration in `migrations/`** to staging. Add your real owner account directly to its `users` table. Do not run the demo seed against a hosted database.
-3. **Configure email sign-in.** Enable Cloudflare Access One-time PIN. Allow your exact email, and protect `/editor*`, `/api/*`, and `/preview/*`. The app also verifies the signed identity and active database membership.
-4. **Test one complete workflow.** Sign in as the owner, invite a real test contributor, publish a test article and Gallery post, open them while signed out, then delete and restore them. Confirm an uninvited email cannot reach private pages, APIs, previews, or unpublished photos. Check a physical phone and Safari.
-5. **Make a content backup and test restoring it** into a separate test database and bucket. Keep a copy outside GitHub and outside the live Cloudflare resources.
-6. **Configure production separately.** Use a clean production database and private media bucket; apply all migrations; add the real owner; configure production Access. Add the approved `vanityvair.com` custom-domain route and deploy. Preserve existing DNS and email records. Do not deploy the local account switcher or sample database.
-7. **Repeat the sign-in and signed-out checks** on the final hostname before inviting everyone. Confirm an article and uploaded photo survive a later code deployment.
+Apply all migrations to the separate staging database. Configure its private `AUTH_PEPPER` secret, deploy, then test sign-in, invitation expiry/reuse, logout, uploads, private media, and posting. Staging has a separate owner password from production.
 
-The detailed environment commands and configuration are in [README.md](../README.md#separate-cloudflare-environments). Hosting account setup, costs, and domain changes have not been performed by this source update.
+For production, apply migrations to the clean production database, configure a different private `AUTH_PEPPER`, add the owner email, and deploy to the approved custom domain. Never seed demonstration accounts or copy local preview data to production. Verify signed-out privacy, take a database backup, and test restoring it to staging. Preserve existing email/DNS records.
+
+A private single-use owner setup link activates the owner's password. The owner chooses the password on the website. Do not put passwords into chat. Keep `AUTH_PEPPER` in a password manager or another secure private location: it is required to verify existing passwords after a full disaster recovery. Rotating it invalidates passwords and requires new invitation/reset links.
 
 ## Your everyday workflow
 
@@ -48,14 +47,12 @@ The homepage automatically shows the four newest visible Gallery posts after its
 
 ### Invite a contributor
 
-There are two steps; adding someone in the website alone does not grant sign-in.
+1. In **Our people**, add their name, email, bio, and optional portfolio.
+2. Select **Invitation / reset link** on their card. Copy the link and share it privately yourself. The website does not email it.
+3. They open the link within 24 hours and choose a password of 14–128 characters. The link works once. Generating another link cancels the earlier one.
+4. They sign in at `/sign-in` using that email and password. They can set a portrait, write articles for review, and post Gallery moments directly. They need neither Cloudflare nor GitHub accounts.
 
-1. In **Our people**, add their name, email, bio, and optional portfolio link.
-2. Add the **same exact email** to the hosted site's Cloudflare Access allow-list.
-3. Send them your hosted `/editor` link yourself. They enter their email and use the code sent by Cloudflare. The website does not send a separate invitation email.
-4. They can set a portrait under **My profile**, write their own articles, submit them for your review, and publish Gallery moments directly. They do not need GitHub access.
-
-To remove access, deactivate the person in **Our people** and remove their email from Cloudflare Access. Existing public bylines stay attributed.
+For a forgotten password, generate a new invitation/reset link. Using it changes the password and signs out existing sessions. Removing editor access in **Our people** blocks their existing sessions immediately. Their published bylines remain attributed. Sessions expire after seven days; **Sign out** invalidates the current session.
 
 ### Photos, ads, and Trash
 
@@ -81,29 +78,21 @@ Do not rerun seeds on production or replace its database with `.wrangler/state`.
 
 A useful request for future updates: “Make this change, test it locally and in staging, back up production before migrating it, and tell me exactly which commit was deployed.”
 
-## Backups: the three pieces
+## Backups
 
-| Piece | Contains | How to protect it |
-| --- | --- | --- |
-| GitHub | Source code and migrations | Commit/push reviewed changes; keep a local clone. |
-| D1 export | Articles, Gallery posts, people, captions, tags, Trash, media inventory | Export to a private backup folder. |
-| R2 objects | The actual uploaded image files | Copy the objects named by the media inventory into the same backup set. |
+GitHub holds the code. A **D1 export holds writing, photos, people, and authentication records** for this deployed storage design. Keep the export private, outside this public repository. Keep original photos separately. Trash is useful recovery, not a backup.
 
-**GitHub is not a backup of your writing or uploads. Trash is not a backup either.**
-
-Before significant updates and regularly while publishing, pause editing/uploads briefly and make a matched database-plus-media backup. Suggested routine once live: daily while actively posting, weekly when quiet, and before every database migration. No automatic off-site backup job is currently configured; this routine is manual until one is set up.
-
-A production database export uses this command after the environment exists (replace the destination with a private folder outside the repository):
+Pause editing briefly and export before migrations, daily while actively posting, and weekly when quiet:
 
 ```sh
 npx wrangler d1 export DB --env production --remote --output /absolute/private/backup/database.sql
 ```
 
-Then download the matching R2 objects under their original media IDs. [README.md](../README.md#backup-export-and-recovery) has the per-object command. An SQL export without the photo files is incomplete. Save the environment, date, source commit, object inventory, and checksums with the backup. Keep at least one copy on a different device or private backup service. Backups contain contributor emails and private drafts, so never commit them or attach them to a public issue.
+Record the date, environment, and source commit. Keep another copy on a separate device/private backup service, and securely retain the environment's `AUTH_PEPPER`. No scheduled off-site backup is configured yet. Database exports contain private drafts, emails, password verifiers, and hashed sessions/invitations: never publish them.
 
-D1's Time Travel is additional recovery support for the hosted database. Its retention depends on the account plan; verify the applicable window in Cloudflare. It does not replace a matched copy of the uploaded images or an independent backup.
+Test restoration into a separate staging database, never on production. Import the SQL, configure the matching secret only in the isolated test environment, and verify an article, draft, photo, and carousel. Revoke imported authentication sessions/invitations before exposing a restored environment. D1 Free Time Travel currently offers seven days of additional database recovery; independent exports remain necessary.
 
-Test a recovery before relying on it: import the SQL into a new staging database, restore photos into a new private bucket using their original IDs, connect the test app, and check an article, a carousel, a draft, and sign-in. Do not practise a full restore on live production.
+Legacy local sample images still live in local R2 simulation. Those fixtures are not deployed and are not copied into production.
 
 ## Quick maintenance routine
 
@@ -112,4 +101,4 @@ Test a recovery before relying on it: import the SQL into a new staging database
 - Monthly: review contributor access, Cloudflare usage/billing, and dependency/security notices. Test upgrades locally and in staging before production.
 - After any incident: stop changing content, preserve the current state, identify the last good commit and backup, and recover in staging first.
 
-Official references, checked October 22, 2026: [Cloudflare email PIN sign-in](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/one-time-pin/), [D1 import/export](https://developers.cloudflare.com/d1/best-practices/import-export-data/), and [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/).
+Official references: [D1 limits](https://developers.cloudflare.com/d1/platform/limits/), [D1 import/export](https://developers.cloudflare.com/d1/best-practices/import-export-data/), [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/).

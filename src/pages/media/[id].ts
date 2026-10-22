@@ -10,7 +10,13 @@ export const GET: APIRoute = async ({ params, locals }) => {
     OR EXISTS(SELECT 1 FROM users u WHERE u.avatar='/media/' || m.id)
     OR ?='owner' OR m.owner_email=?)`).bind(id,`/media/${id}`,locals.user?.role||'',locals.user?.email||'').first<{mime:string}>();
   if(!row) return new Response('Not found',{status:404});
-  const object = await env.MEDIA.get(id);
+  const stored = await env.DB.prepare('SELECT data FROM media_chunks WHERE id=? ORDER BY part').bind(id).all<{data:number[]}>();
+  if(stored.results.length){
+    const bytes=new Uint8Array(stored.results.reduce((size,part)=>size+part.data.length,0));let offset=0;
+    for(const part of stored.results){bytes.set(part.data,offset);offset+=part.data.length;}
+    return new Response(bytes,{headers:{'Content-Type':row.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+  }
+  const object = env.APP_ENV === 'local' ? await env.MEDIA.get(id) : null;
   if(!object) return new Response('Not found',{status:404});
   return new Response(object.body as unknown as ReadableStream,{headers:{'Content-Type':row.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
 };

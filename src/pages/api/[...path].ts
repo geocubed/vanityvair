@@ -3,6 +3,7 @@ import type { D1PreparedStatement } from '@cloudflare/workers-types';
 import { env } from 'cloudflare:workers';
 import { MAX_IMAGE_BYTES, STORAGE_CAP, cleanBody, validateStory, slugify, mediaIds, safeLink } from '../../lib/content';
 import { canEdit } from '../../lib/auth';
+import {issueInvite,userColumns} from '../../lib/site-auth';
 import { workingStory, checkMedia, refStatements, hydrateStoryPhotos } from '../../lib/store';
 import { validatePhotoMetadata, photoCredit, completePhoto } from '../../lib/photo-metadata';
 import { imageInfo } from '../../lib/image-info';
@@ -198,9 +199,8 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
         }, !((user.role === 'owner' && request.headers.get('x-media-kind') === 'artwork') || request.headers.get('x-media-kind') === 'portrait'));
         const {description,photographer,is_screenshot} = metadata;
         const name = (request.headers.get('x-file-name') || 'Photo').slice(0,180);
-        await env.DB.prepare('INSERT INTO media(id,owner_email,bytes,mime,name,created_at,width,height,description,photographer,is_screenshot) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(mediaId,user.email,bytes.byteLength,mime,name,new Date().toISOString(),width,height,description,photographer,is_screenshot).run();
-        try { await env.MEDIA.put(mediaId,bytes, { httpMetadata:{contentType:mime} }); }
-        catch (e) { await env.DB.prepare('DELETE FROM media WHERE id=?').bind(mediaId).run(); throw e; }
+        const insert = env.DB.prepare('INSERT INTO media(id,owner_email,bytes,mime,name,created_at,width,height,description,photographer,is_screenshot) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(mediaId,user.email,bytes.byteLength,mime,name,new Date().toISOString(),width,height,description,photographer,is_screenshot);
+        await env.DB.batch([insert, ...Array.from({length:Math.ceil(bytes.byteLength/32000)},(_,part)=>env.DB.prepare('INSERT INTO media_chunks(id,part,data) VALUES(?,?,?)').bind(mediaId,part,Array.from(bytes.slice(part*32000,(part+1)*32000))))]);
         return Response.json({ id: mediaId, url: `/media/${mediaId}`, bytes: bytes.byteLength, name, ...metadata },{status:201});
       }
       if (method === 'PUT' && id) {
@@ -214,20 +214,28 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
         owner();
         const deleted = await env.DB.prepare("DELETE FROM media WHERE id=? AND NOT EXISTS(SELECT 1 FROM media_refs WHERE media_id=?) AND NOT EXISTS(SELECT 1 FROM promotions WHERE image=?) AND NOT EXISTS(SELECT 1 FROM users WHERE avatar=?) AND NOT EXISTS(SELECT 1 FROM gallery_posts WHERE media_id=?) AND NOT EXISTS(SELECT 1 FROM gallery_images WHERE media_id=?) RETURNING id").bind(id,id,`/media/${id}`,`/media/${id}`,id,id).first();
         if (!deleted) return error('This photo is in use. Remove it from stories, promotions, and profiles first. Gallery photos stay in the library while their posts exist.');
-        await env.MEDIA.delete(id);
+        if (env.APP_ENV === 'local') await env.MEDIA.delete(id);
         return Response.json({ok:true});
       }
     }
     if (resource === 'users') {
       owner();
-      if (method === 'GET') return Response.json((await env.DB.prepare('SELECT * FROM users ORDER BY role DESC,name').all()).results);
+      if (method === 'GET') return Response.json((await env.DB.prepare(`SELECT ${userColumns} FROM users ORDER BY role DESC,name`).all()).results);
+      if(method==='POST'&&id==='invite'){
+        const body=JSON.parse(new TextDecoder().decode(await limitedBytes(request,1000)));
+        const email=String(body.email||'').toLowerCase().trim();
+        const person=await env.DB.prepare('SELECT email FROM users WHERE email=? AND active=1').bind(email).first();
+        if(!person)return error('Contributor not found.',404);
+        const token=await issueInvite(env.DB,email);
+        return Response.json({url:`${new URL(request.url).origin}/sign-in?mode=join#${token}`},{headers:{'Cache-Control':'no-store'}});
+      }
       if (method === 'POST') {
         const body = JSON.parse(new TextDecoder().decode(await limitedBytes(request,10_000)));
         const email = String(body.email || '').trim().toLowerCase(); const name = String(body.name || '').trim().slice(0,100);
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !name) return error('Enter a name and valid email.');
         if (email === user.email) return error('The owner account stays active.');
         await env.DB.prepare("INSERT INTO users(email,name,role,slug,bio,link,active) VALUES(?,?,'contributor',?,?,?,1) ON CONFLICT(email) DO UPDATE SET name=excluded.name,bio=excluded.bio,link=excluded.link,active=excluded.active WHERE users.role!='owner'").bind(email,name,`${slugify(name)}-${crypto.randomUUID().slice(0,5)}`,String(body.bio || '').slice(0,500),safeLink(String(body.link || ''))).run();
-        return Response.json({ok:true, note:'Also add this email to the Cloudflare Access allow-list before their first sign-in.'});
+        return Response.json({ok:true, note:'Contributor saved. Create an invitation link below and share it privately.'});
       }
       if (method === 'DELETE' && id) {
         await env.DB.prepare("UPDATE users SET active=0 WHERE email=? AND role!='owner'").bind(decodeURIComponent(id)).run();

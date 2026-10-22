@@ -7,7 +7,7 @@ export async function publishedStories(): Promise<Story[]> {
   return results.map(row => ({ ...JSON.parse(row.published_json), author_name: row.author_name, author_slug: row.author_slug, author_bio: row.author_bio, author_avatar: row.author_avatar }));
 }
 export async function workingStory(id: string) { return env.DB.prepare('SELECT * FROM stories WHERE id=? AND deleted_at IS NULL').bind(id).first<Story>(); }
-export async function author(slug: string) { return env.DB.prepare('SELECT * FROM users WHERE slug=?').bind(slug).first<User>(); }
+export async function author(slug: string) { return env.DB.prepare('SELECT email,name,role,bio,slug,link,active,avatar FROM users WHERE slug=?').bind(slug).first<User>(); }
 export async function promotions() { return (await env.DB.prepare("SELECT * FROM promotions WHERE active=1 AND image!='' ORDER BY position,id").all<Promotion>()).results; }
 export async function checkMedia(ids: string[], user: User) {
   const descriptions: Record<string,PhotoMetadata> = {};

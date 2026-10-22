@@ -12,6 +12,7 @@ declare namespace Cloudflare {
     DB: import('@cloudflare/workers-types').D1Database;
     MEDIA: import('@cloudflare/workers-types').R2Bucket;
     APP_ENV: string;
+    AUTH_PEPPER: string;
     ACCESS_TEAM_DOMAIN: string;
     ACCESS_AUD: string;
   }
