@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#b9252e"/><text x="32" y="46" text-anchor="middle" font-family="Georgia,serif" font-size="45" fill="#fff">V</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- VFSans Bold outlines, matching the Vanity Vair masthead. -->
+  <rect width="64" height="64" rx="10" fill="#fff"/>
+  <g fill="#080808">
+    <path d="M-10 706L176 706L309 364L310 364L444 706L630 706L310 -25Z" transform="translate(7.375 53.43) scale(.0375 -.063)"/>
+    <path d="M-10 706L176 706L309 364L310 364L444 706L630 706L310 -25Z" transform="translate(33.375 53.43) scale(.0375 -.063)"/>
+  </g>
+</svg>
