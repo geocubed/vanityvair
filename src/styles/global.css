@@ -140,3 +140,5 @@ body.menu-open .site-drawer{transform:translateX(0)}
 .people-portrait{margin-bottom:20px}
 
 @media(max-width:760px){.header-bottom nav{gap:clamp(8px,2.7vw,18px)}.header-bottom nav a{font-size:7px;letter-spacing:.7px}}
+
+.button-arrow{width:9px;height:9px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;position:relative;display:inline-block;transform:rotate(45deg);margin-right:2px}.button-arrow:after{content:'';position:absolute;width:12px;border-top:1.5px solid currentColor;transform:rotate(-45deg);transform-origin:right center;right:-2px;top:7px}

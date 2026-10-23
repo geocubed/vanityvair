@@ -2,6 +2,9 @@
 @media(max-width:900px){.art-form-columns{grid-template-columns:1fr}.art-summary{flex-direction:column;gap:8px}.art-thumbnail{height:160px}.art-thumbnail.is-poster{height:260px}.art-card-copy{padding:16px}.art-card h2{font-size:25px}}
 @media(max-width:600px){.art-grid{grid-template-columns:1fr;gap:18px}.art-form{padding:20px 15px}.art-form-heading h2{font-size:29px}.art-form-actions{align-items:flex-start;flex-direction:column;gap:12px}.art-filters{gap:6px}.art-filters button{font-size:10px;padding:11px 15px}.art-summary div span{display:block;margin-left:0}.art-thumbnail{height:160px}.art-crop-controls input{min-height:34px}}
 
+/* Requirements stay visible before the upload controls. */
+.art-specs{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px 22px;padding:14px 16px;border:1px solid var(--line);background:#efede7;color:var(--muted);font-size:10px;line-height:1.6;margin:0 0 25px}.art-specs strong{width:100%;color:var(--ink);font-size:11px;font-weight:600;letter-spacing:.4px}.art-specs b{color:var(--ink);font-weight:600}
+
 /* Ads use fixed preview boxes so tall artwork can never cover card controls. */
 .art-thumbnail{overflow:hidden}
 .art-thumbnail img{display:block;width:100%;height:100%;min-height:0;object-fit:contain}
