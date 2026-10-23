@@ -27,8 +27,22 @@ jobs:
         run: npm ci
       - name: Type and Astro checks
         run: npm run check
+      - name: Prepare disposable local test database
+        run: npm run setup
       - name: Test
-        run: npm test
+        run: |
+          npm run dev > /tmp/vanity-vair-dev.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:4321/ > /dev/null; then
+              npm test
+              exit $?
+            fi
+            sleep 1
+          done
+          cat /tmp/vanity-vair-dev.log
+          exit 1
       - name: Build production bundle
         run: CLOUDFLARE_ENV=production npm run build
 
