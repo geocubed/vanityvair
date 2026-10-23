@@ -4,6 +4,7 @@ import WelcomeNotice from '../components/WelcomeNotice.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import FriendImage from '../components/FriendImage.astro';
 const {title='Good people. Great stories.', description='A magazine for our people. Achievements, announcements, projects, and a little well-deserved attention.', active='', demo=true, image=''}=Astro.props;
+const signedInUser = Astro.locals.user;
 ---
 <!doctype html>
 <html lang="en">
@@ -20,7 +21,7 @@ const {title='Good people. Great stories.', description='A magazine for our peop
       <div class="header-top">
         <button class="header-action header-write" type="button" id="subscribe-button">SUBSCRIBE</button>
         <a class="wordmark" href="/" aria-label="Vanity Vair home">VANITY VAIR</a>
-        <div class="header-tools"><a class="header-action header-promos" href="/about#promotions">PROMOTIONS</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-drawer"><span>MENU</span><span class="hamburger" aria-hidden="true"><i></i><i></i></span></button></div>
+        <div class="header-tools"><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-drawer"><span>MENU</span><span class="hamburger" aria-hidden="true"><i></i><i></i></span></button></div>
       </div>
       <div class="header-bottom"><nav aria-label="Main navigation"><a class:list={{selected:active==='all'}} href="/archive">ALL STORIES</a><a class:list={{selected:active==='Achievements'}} href="/category/achievements">ACHIEVEMENTS</a><a class:list={{selected:active==='Announcements'}} href="/category/announcements">ANNOUNCEMENTS</a><a class:list={{selected:active==='Projects'}} href="/category/projects">PROJECTS</a><a class:list={{selected:active==='gallery'}} href="/gallery">GALLERY</a></nav></div>
     </header>
@@ -35,12 +36,12 @@ const {title='Good people. Great stories.', description='A magazine for our peop
       </nav>
       <p class="drawer-more">THE REST</p>
       <nav class="drawer-more-links" aria-label="More links">
-        <a href="/about">ABOUT THE MAGAZINE</a><a href="/about#promotions">FRIEND-POWERED PROMOTIONS</a><a href="/archive#search">SEARCH THE ARCHIVE</a><a href="/editor">THE WRITING DESK · SIGN IN</a>
+        <a href="/about">ABOUT THE MAGAZINE</a><a href="/about#promotions">FRIEND-POWERED PROMOTIONS</a><a href="/archive#search">SEARCH THE ARCHIVE</a><a href="/editor">{signedInUser ? `THE WRITING DESK · SIGNED IN AS ${signedInUser.name}` : 'THE WRITING DESK · SIGN IN'}</a>
       </nav>
       <p class="drawer-note">An independent parody publication, made by and for our favourite people.</p>
     </aside>
     <dialog class="subscribe-dialog" id="subscribe-dialog" aria-labelledby="subscribe-title">
-      <form method="dialog"><button class="subscribe-close" aria-label="Close">×</button><p class="eyebrow">A NOTE FROM THE EDITORS</p><h2 id="subscribe-title">haha should we tho...?</h2><button class="button" value="close">Fair enough</button></form>
+      <form method="dialog"><button class="subscribe-close" aria-label="Close">×</button><p class="eyebrow">A NOTE FROM THE EDITORS</p><h2 id="subscribe-title">I knew you’d try and press it</h2><button class="button" value="close">I was curious!</button></form>
     </dialog>
     <main id="main"><slot /></main>
     {active !== 'home' && Astro.url.pathname !== '/about' && !Astro.url.pathname.startsWith('/preview/') && <FriendImage offset={2} />}

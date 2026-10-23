@@ -18,7 +18,7 @@ const lead=stories[0];
   <section class="latest-section wrap"><div class="section-heading"><div><span class="eyebrow">THE GROUP CHAT, ELEVATED.</span><h2>Word on the street.</h2></div><a class="text-link" href="/archive">All stories <span>↗</span></a></div><div class="latest-layout"><div class="latest-stories">{stories.slice(1,3).map((story,i)=><StoryCard story={story} number={i+2} />)}</div></div></section>
   <FriendImage offset={1} />
   <div class="category-sections wrap">{categories.map(category => <CategoryShelf category={category} stories={stories.filter(story => story.category === category)} />)}</div>
-  </> : <section class="empty-state wrap"><h1>A new edition is on its way.</h1><p>Our people have stories to tell. Come back soon.</p><a href="/editor" class="button">Write the first story ↗</a></section>}
+  </> : <section class="empty-state wrap"><h1>let us cook</h1></section>}
   {!lead&&<GalleryShelf />}
 </Magazine>
 <style>

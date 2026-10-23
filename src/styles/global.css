@@ -79,7 +79,7 @@ body.menu-open .site-drawer{transform:translateX(0)}
 .subscribe-dialog form{position:relative;text-align:center;padding:54px 34px 38px}
 .subscribe-dialog .eyebrow{font-size:8px;color:var(--muted)}
 .subscribe-dialog h2{font-family:var(--serif);font-size:clamp(32px,8vw,46px);line-height:1.1;font-weight:500;margin:17px 0 28px}
-.subscribe-close{position:absolute;right:12px;top:7px;border:0;background:none;font-size:30px;color:var(--muted);line-height:1}
+.subscribe-close{position:absolute;right:12px;top:7px;border:0;background:none;font-size:30px;color:var(--muted);line-height:1}.subscribe-close:focus{outline:0}.subscribe-close:focus-visible{outline:1px solid var(--muted);outline-offset:4px}
 .promo-banner{margin-block:30px 8px}
 .promo-banner-card{--banner-bg:#e9e4d9;--banner-ink:#24241f;position:relative;min-height:190px;display:grid;grid-template-columns:1fr minmax(90px,150px) auto;align-items:center;gap:24px;overflow:hidden;padding:30px 34px;background:var(--banner-bg);color:var(--banner-ink)}
 .promo-banner-card[hidden]{display:none}

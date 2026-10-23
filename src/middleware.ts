@@ -18,6 +18,9 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     // A session counter, not a visitor identifier. Only the selected image is sent.
     ctx.cookies.set('vv-edition', String((visit + 1) % 1_000_000_000), { path: '/', httpOnly: true, sameSite: 'lax', secure: ctx.url.protocol === 'https:' });
   }
+  if (!ctx.locals.localPreview) {
+    ctx.locals.user = await sessionUser(env.DB, ctx.cookies.get(ctx.url.protocol === 'https:' ? '__Host-vv-session' : 'vv-session')?.value);
+  }
   const isPrivate = path.startsWith('/editor') || path.startsWith('/api/') || path.startsWith('/preview/');
   if (isPrivate || path.startsWith('/media/')) {
     const previewRole = ctx.cookies.get('vv-preview-role')?.value;
