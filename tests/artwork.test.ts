@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
 import { imageInfo } from '../src/lib/image-info';
-import { cropRectangle, matchesFormat, selectPromotion } from '../src/lib/promotion';
+import { cropRectangle, matchesFormat, randomPromotion, detectFormat } from '../src/lib/promotion';
 import type { Promotion } from '../src/lib/types';
 describe('image artwork validation', () => {
   it('reads real JPEG and all common WebP dimensions from encoded bytes', async () => {
@@ -27,9 +27,13 @@ describe('image artwork validation', () => {
     expect(matchesFormat(1600,200,'banner')).toBe(false);
     expect(matchesFormat(800,1200,'poster')).toBe(false);
   });
-  it('rotates only active artwork in the right shape and handles empty or singleton pools', () => {
-    const items = [{id:'a',active:1,image:'/media/a',format:'banner'},{id:'b',active:1,image:'/media/b',format:'banner'},{id:'c',active:1,image:'/media/c',format:'poster'},{id:'d',active:0,image:'/media/d',format:'banner'},{id:'e',active:1,image:'',format:'banner'}] as Promotion[];
-    expect([0,1,2].map(visit => selectPromotion(items,'banner',visit)?.id)).toEqual(['a','b','a']);
-    expect(selectPromotion(items,'poster',99)?.id).toBe('c'); expect(selectPromotion([],'banner',0)).toBeUndefined();
+  it('randomly samples companies and avoids repeats across formats when alternatives exist',()=>{
+    const items=[{id:'a',company_id:'one',name:'One',active:1,image:'/a',format:'banner'},{id:'b',company_id:'one',name:'One',active:1,image:'/b',format:'poster'},{id:'c',company_id:'two',name:'Two',active:1,image:'/c',format:'poster'},{id:'d',company_id:'three',name:'Three',active:0,image:'/d',format:'poster'}] as Promotion[];
+    const used=new Set<string>();
+    expect(randomPromotion(items,'banner',used,()=>0)?.id).toBe('a');
+    expect(randomPromotion(items,'poster',used,()=>0)?.id).toBe('c');
+    expect(randomPromotion(items,'poster',used,()=>0)?.id).toBe('b');
+    expect(randomPromotion([],'banner',used)).toBeUndefined();
+    expect(detectFormat(1600,400)).toBe('banner');expect(detectFormat(400,1600)).toBe('poster');
   });
 });

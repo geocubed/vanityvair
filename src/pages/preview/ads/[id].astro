@@ -1,0 +1,19 @@
+---
+import {env} from 'cloudflare:workers';
+import Magazine from '../../../layouts/Magazine.astro';
+import Article from '../../../components/Article.astro';
+import FriendImage from '../../../components/FriendImage.astro';
+import {publishedStories} from '../../../lib/store';
+import type {Promotion} from '../../../lib/types';
+if(Astro.locals.user?.role!=='owner')return new Response('Not found',{status:404});
+const ad=Astro.params.id==='draft'?{id:'draft',name:'Your ad',format:Astro.url.searchParams.get('format')==='poster'?'poster':'banner',image:'/placeholder.svg',alt:'Ad preview',active:1,url:''} as Promotion:await env.DB.prepare('SELECT * FROM promotions WHERE id=?').bind(Astro.params.id).first<Promotion>();
+if(!ad)return new Response('Not found',{status:404});
+Astro.locals.friendImages=[{...ad,active:1}];
+const stories=await publishedStories();
+---
+<Magazine title={`Ad preview: ${ad.name}`} demo={false}>
+  <div class="wrap preview-note"><p>PRIVATE AD PREVIEW · {ad.name} · {ad.format}</p><p>This placement shows your saved artwork, including paused ads. <a href="/editor?tab=ads">Back to the Kitchen ↗</a></p>{ad.format==='poster'&&<p>Posters appear beside articles on wide screens.</p>}</div>
+  {stories[0]?<Article story={stories[0]} />:<section class="wrap sample"><div><p class="eyebrow">PLACEMENT PREVIEW</p><h1>A story from our people.</h1><p>Your artwork sits beside the story, leaving the text room to breathe.</p></div>{ad.format==='poster'&&<FriendImage format="poster" placement="side" />}</section>}
+  {ad.format==='banner'&&<FriendImage />}
+</Magazine>
+<style>.preview-note{padding-block:24px;border-bottom:1px solid var(--line);font-size:13px}.preview-note a{text-decoration:underline}.sample{display:grid;grid-template-columns:1fr 200px;gap:50px;padding-block:80px}.sample h1{font:48px var(--serif)}</style>

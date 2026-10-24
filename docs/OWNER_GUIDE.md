@@ -11,7 +11,7 @@ The hosted site uses Cloudflare Workers Free and D1 Free. Both writing and uploa
 
 The public GitHub repository contains source, migrations, and fictional fixtures only. Real content, contributor emails, password verifiers, invitations, and photo bytes belong in the private database. Never commit exports, invitation links, or secrets.
 
-The writing desk uses the site's own invitation-only login. Cloudflare Access/Zero Trust is not required. If a separate Zero Trust subscription was activated in the Cloudflare dashboard, review that account subscription independently; the website does not use it.
+The Kitchen uses the site's own invitation-only login. Cloudflare Access/Zero Trust is not required. If a separate Zero Trust subscription was activated in the Cloudflare dashboard, review that account subscription independently; the website does not use it.
 
 ## First launch
 
@@ -37,7 +37,7 @@ Do not edit the same article in multiple tabs; stale saves are rejected to prote
 
 ### Post to Gallery
 
-1. Select **Gallery** in the writing desk. Add one to ten photos.
+1. Select **Gallery** in the Kitchen. Add one to ten photos.
 2. Use the reorder controls to choose the cover and sequence. Add a caption and optional hashtags, such as `#shotoniphone`. Clicking a hashtag in the public Gallery shows matching posts.
 3. Select **Preview post**. This is private and does not publish or make private photos public. Return to editing to make changes.
 4. Select **Post to Gallery** when ready. Gallery posts publish immediately, including those posted by contributors; they do not use article review.
@@ -62,7 +62,7 @@ For a forgotten password, generate a new invitation/reset link. Using it changes
 
 ## Updating the website
 
-**Content updates** happen in the writing desk. **Code updates** change layout or behavior and go through GitHub and deployment. A GitHub push alone does not deploy this Worker; the repository does not currently configure automatic deployment.
+**Content updates** happen in the Kitchen. **Code updates** change layout or behavior and go through GitHub and deployment. A GitHub push alone does not deploy this Worker; the repository does not currently configure automatic deployment.
 
 For a code change:
 

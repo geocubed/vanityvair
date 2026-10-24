@@ -2,21 +2,18 @@ import { defineMiddleware } from 'astro:middleware';
 import { env } from 'cloudflare:workers';
 import {sessionUser} from './lib/site-auth';
 import type { User } from './lib/types';
+import {recordActivity,activityBefore} from './lib/activity';
 import { promotions } from './lib/store';
 export const onRequest = defineMiddleware(async (ctx, next) => {
   const path = ctx.url.pathname;
   ctx.locals.localPreview = import.meta.env.DEV && env.APP_ENV === 'local';
   ctx.locals.user = null;
   ctx.locals.friendImages = [];
-  ctx.locals.editionVisit = 0;
+  ctx.locals.usedPromotionCompanies=new Set();
+  ctx.locals.promotionPlacements=new Map();
   const publicPage = ctx.request.method === 'GET' && (path === '/' || path === '/gallery' || path === '/archive' || path === '/about' || /^\/(stories|category|people)\/[^/]+\/?$/.test(path));
   if (publicPage) {
-    const previous = Number(ctx.cookies.get('vv-edition')?.value || 0);
-    const visit = Number.isSafeInteger(previous) && previous >= 0 ? previous : 0;
-    ctx.locals.editionVisit = visit;
     ctx.locals.friendImages = await promotions();
-    // A session counter, not a visitor identifier. Only the selected image is sent.
-    ctx.cookies.set('vv-edition', String((visit + 1) % 1_000_000_000), { path: '/', httpOnly: true, sameSite: 'lax', secure: ctx.url.protocol === 'https:' });
   }
   if (!ctx.locals.localPreview) {
     ctx.locals.user = await sessionUser(env.DB, ctx.cookies.get(ctx.url.protocol === 'https:' ? '__Host-vv-session' : 'vv-session')?.value);
@@ -40,7 +37,20 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
     const maxBytes = path === '/api/media' ? 500_000 : 180_000;
     if (Number(ctx.request.headers.get('content-length') || 0) > maxBytes) return Response.json({ error: 'Upload is too large. Photos must be 500 KB or smaller.' }, { status: 413 });
   }
+  let activityBody:Record<string,unknown>={};
+  if(path.startsWith('/api/')&&!['GET','HEAD','OPTIONS'].includes(ctx.request.method)&&ctx.request.headers.get('content-type')?.includes('application/json')){
+    const reader=ctx.request.clone().body?.getReader();
+    if(reader){
+      const chunks:Uint8Array[]=[];let size=0;
+      while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>180000){void reader.cancel();void ctx.request.body?.cancel();return Response.json({error:'Request is too large.'},{status:413});}chunks.push(value);}
+      const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+      try{const parsed=JSON.parse(new TextDecoder().decode(bytes));if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))activityBody=parsed;}catch{}
+    }
+  }
+  const before=ctx.locals.user&&path.startsWith('/api/')&&!['GET','HEAD','OPTIONS'].includes(ctx.request.method)?await activityBefore(path,activityBody):null;
   const response = await next();
+  if(ctx.locals.user&&path.startsWith('/api/')){try{await recordActivity(ctx.locals.user,path,ctx.request.method,response,activityBody,before);}catch(error){console.error('Kitchen activity could not be recorded',error);}}
+
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-Frame-Options', 'DENY');

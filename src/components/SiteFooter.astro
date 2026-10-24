@@ -3,10 +3,10 @@ const { demo = false } = Astro.props;
 ---
 <footer class="magazine-footer">
   <div class="wrap">
+    <p class="footer-slogan">V is for Vancouver</p>
     <div class="footer-directory">
       <div class="footer-identity">
         <a class="footer-masthead" href="/" aria-label="Vanity Vair home">VANITY VAIR</a>
-        <p>Your friends. Front-page material.</p>
       </div>
       <nav class="footer-column" aria-labelledby="footer-explore">
         <h2 id="footer-explore">MORE FROM VANITY VAIR</h2>
@@ -16,20 +16,13 @@ const { demo = false } = Astro.props;
         <a href="/category/announcements">Announcements</a>
         <a href="/category/projects">Projects</a>
       </nav>
-      <nav class="footer-column" aria-labelledby="footer-involved">
-        <h2 id="footer-involved">GET INVOLVED</h2>
-        <a href="/editor">Write a story</a>
-        <a href="/editor">Contributor sign in</a>
-        <a href="/about#promotions">Promote your business</a>
-        <a href="/about">Meet the magazine</a>
-      </nav>
+
     </div>
     <div class="footer-utility">
       <nav aria-label="Footer resources">
         <a href="/about">About the publication</a>
         <a href="/about#promotions">Our promotions</a>
         <a href="/archive#search">Search the archive</a>
-        <a href="/editor">The writing desk</a>
         <a href="#legal">Disclaimer</a>
       </nav>
       <span class="footer-edition">FRIENDS &amp; FAMILY EDITION</span>
@@ -46,10 +39,11 @@ const { demo = false } = Astro.props;
 </footer>
 <style>
   .magazine-footer{background:#080808;color:#fff;padding:56px 0 42px;margin-top:0}
-  .footer-directory{display:grid;grid-template-columns:2fr 1fr 1fr;gap:60px;padding-bottom:43px;border-bottom:1px solid #a6a6a6}
+  .footer-directory{display:grid;grid-template-columns:2fr 1fr;gap:60px;padding-bottom:43px;border-bottom:1px solid #a6a6a6}
   .footer-identity{align-self:center}
-  .footer-masthead{font-family:var(--sans);font-weight:700;font-size:38px;line-height:1;letter-spacing:-2px;display:inline-block}
+  .footer-masthead{font-family:var(--sans);font-weight:700;font-size:38px;line-height:1;letter-spacing:-2px;display:inline-block;transform:scaleX(.76) scaleY(1.12)}
   .footer-identity p{color:#aaa;font-size:12px;margin:15px 0 0}
+  .footer-slogan{color:#fff;font-family:var(--serif);font-size:clamp(28px,4vw,42px);line-height:1.2;text-align:center;border-block:1px solid #777;padding:24px 12px;margin:0 0 42px}
   .footer-column{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
   .footer-column h2{font-family:var(--sans);font-size:10px;letter-spacing:2px;line-height:1.5;font-weight:700;margin:0 0 13px}
   .footer-column a{font-size:12px;line-height:1.5}
@@ -64,6 +58,6 @@ const { demo = false } = Astro.props;
   .footer-legal{font-size:12px;line-height:1.7;color:#aaa;scroll-margin-top:24px}.footer-legal p a{text-decoration:underline;text-underline-offset:3px;color:#ddd}.footer-legal h2{font-size:10px;font-weight:700;letter-spacing:2px;color:#fff;margin:8px 0 15px}.footer-legal p+p{margin-top:12px}.footer-legal .footer-copyright{font-size:10px;color:#888;margin-top:22px}
   .footer-legal p{margin:0;max-width:1100px}
   .footer-legal .footer-preview{margin-top:12px;color:#777;font-size:8px;letter-spacing:1.5px}
-  @media(max-width:1000px){.footer-directory{grid-template-columns:1.4fr 1fr 1fr;gap:30px}.footer-masthead{font-size:32px}.footer-utility{align-items:flex-start}.footer-edition{padding:13px 12px;font-size:7px}}
-  @media(max-width:600px){.magazine-footer{padding:36px 0 30px}.footer-directory{grid-template-columns:1fr 1fr;gap:32px 22px;padding-bottom:30px}.footer-identity{grid-column:1/-1}.footer-masthead{font-size:32px}.footer-identity p{font-size:11px;margin-top:10px}.footer-column h2{font-size:8px;letter-spacing:1.3px;min-height:24px;margin-bottom:8px}.footer-column a{font-size:12px}.footer-utility{flex-direction:column;gap:23px;padding-block:25px}.footer-utility nav{gap:12px 18px}.footer-utility nav a{border:0;padding:0;font-size:10px}.footer-edition{font-size:8px}.footer-legal{font-size:11px}.footer-legal .footer-preview{font-size:7px}}
+  @media(max-width:1000px){.footer-directory{grid-template-columns:1.4fr 1fr;gap:30px}.footer-masthead{font-size:32px}.footer-utility{align-items:flex-start}.footer-edition{padding:13px 12px;font-size:7px}}
+  @media(max-width:600px){.magazine-footer{padding:36px 0 30px}.footer-directory{grid-template-columns:1fr;gap:32px 22px;padding-bottom:30px}.footer-identity{grid-column:1/-1;text-align:center}.footer-column{align-items:center;text-align:center}.footer-utility{align-items:center;text-align:center}.footer-utility nav{justify-content:center}.footer-legal{text-align:center}.footer-masthead{font-size:32px}.footer-identity p{font-size:11px;margin-top:10px}.footer-column h2{font-size:8px;letter-spacing:1.3px;min-height:24px;margin-bottom:8px}.footer-column a{font-size:12px}.footer-utility{flex-direction:column;gap:23px;padding-block:25px}.footer-utility nav{gap:12px 18px}.footer-utility nav a{border:0;padding:0;font-size:10px}.footer-edition{font-size:8px}.footer-legal{font-size:11px}.footer-legal .footer-preview{font-size:7px}}
 </style>

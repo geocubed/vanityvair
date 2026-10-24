@@ -142,3 +142,9 @@ body.menu-open .site-drawer{transform:translateX(0)}
 @media(max-width:760px){.header-bottom nav{gap:clamp(8px,2.7vw,18px)}.header-bottom nav a{font-size:7px;letter-spacing:.7px}}
 
 .button-arrow{width:9px;height:9px;border-top:1.5px solid currentColor;border-right:1.5px solid currentColor;position:relative;display:inline-block;transform:rotate(45deg);margin-right:2px}.button-arrow:after{content:'';position:absolute;width:12px;border-top:1.5px solid currentColor;transform:rotate(-45deg);transform-origin:right center;right:-2px;top:7px}
+
+/* A taller, narrower masthead; compact navigation on phones. */
+.wordmark{transform:scaleX(.76) scaleY(1.12)}
+@media(max-width:760px){.header-top{grid-template-columns:minmax(0,1fr) auto;height:64px;padding-inline:20px}.header-write,.header-bottom{display:none}.wordmark{justify-self:start;transform-origin:left center;font-size:34px}.header-tools{grid-column:2}.menu-toggle{font-size:9px}}
+.prose{display:flow-root}.body-photo[data-align="left"]{float:left;margin:8px 26px 20px 0}.body-photo[data-align="right"]{float:right;margin:8px 0 20px 26px}.body-photo[data-align="none"]{margin-inline:auto;clear:both}.body-photo[data-size="small"]{width:35%}.body-photo[data-size="medium"]{width:50%}.body-photo[data-size="large"]{width:75%}.body-photo[data-size="full"]{width:100%;float:none;clear:both;margin-inline:0}
+@media(max-width:600px){.prose .body-photo{float:none;width:100%;margin:26px 0}}

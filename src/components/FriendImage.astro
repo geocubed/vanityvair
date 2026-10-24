@@ -1,10 +1,12 @@
 ---
-import { artworkSizes, selectPromotion } from '../lib/promotion';
+import { artworkSizes, randomPromotion } from '../lib/promotion';
 import type { PromotionFormat } from '../lib/types';
 interface Props { format?: PromotionFormat; offset?: number; placement?: 'page' | 'side' }
 const { format = 'banner', offset = 0, placement = 'page' } = Astro.props;
 const size = artworkSizes[format];
-const item = selectPromotion(Astro.locals.friendImages || [], format, Astro.locals.editionVisit || 0, offset);
+const key=`${format}:${placement}:${offset}`;
+if(!Astro.locals.promotionPlacements.has(key))Astro.locals.promotionPlacements.set(key,randomPromotion(Astro.locals.friendImages||[],format,Astro.locals.usedPromotionCompanies));
+const item=Astro.locals.promotionPlacements.get(key);
 ---
 {item && <aside class:list={['friend-image', `friend-${format}`, { wrap: placement === 'page' && format === 'banner' }]} aria-label="From our friends">
   <p>FROM OUR FRIENDS</p>
@@ -18,7 +20,7 @@ const item = selectPromotion(Astro.locals.friendImages || [], format, Astro.loca
   .friend-image a:focus-visible{outline:2px solid var(--red);outline-offset:4px}
   .friend-banner{margin-block:30px 10px}
   .friend-banner img{height:auto;aspect-ratio:4/1;object-fit:cover;object-position:center}
-  .friend-poster{width:100%;max-width:140px;align-self:start;justify-self:center}
+  .friend-poster{width:100%;max-width:200px;align-self:start;justify-self:center}
   .friend-poster img{aspect-ratio:1/4}
   @media(max-width:760px){.friend-banner{margin-block:24px 0}.friend-poster{display:none}}
 </style>

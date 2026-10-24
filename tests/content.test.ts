@@ -36,7 +36,7 @@ describe('untrusted contributor content',()=>{
     const src='/media/12345678-1234-1234-1234-123456789abc';
     const body=cleanBody(`<img src="${src}" data-caption="A &amp; B &lt;script&gt;" alt="Untrusted" data-photo-credit="Fake">`,{[src]:{description:'Two people',photographer:'Jane Doe',is_screenshot:0}});
     expect(body).toContain('alt="Two people"');expect(body).not.toContain('Fake');
-    const html=articleBody(body);expect(html).toContain('<figure class="body-photo">');expect(html).toContain('Photograph: Jane Doe');expect(html).toContain('A &amp; B &lt;script&gt;');expect(html).not.toContain('<script>');
+    const html=articleBody(body);expect(html).toContain('<figure class="body-photo"');expect(html).toContain('Photo Credit: Jane Doe');expect(html).toContain('A &amp; B &lt;script&gt;');expect(html).not.toContain('<script>');
   });
   it('extracts unique media references',()=>{expect(mediaIds('/media/12345678-1234-1234-1234-123456789abc /media/12345678-1234-1234-1234-123456789abc')).toHaveLength(1);});
   it('builds readable stable slugs',()=>{expect(slugify('Café: A very big night!')).toBe('cafe-a-very-big-night');});
@@ -51,4 +51,18 @@ describe('editorial identity',()=>{
   const contributor={email:'one@example.com',role:'contributor'} as User;
   it('limits contributors to their own stories',()=>{expect(canEdit(contributor,{author_email:'one@example.com'})).toBe(true);expect(canEdit(contributor,{author_email:'two@example.com'})).toBe(false);expect(canEdit({...contributor,role:'owner'},{author_email:'two@example.com'})).toBe(true);});
   it('fails closed on missing settings, missing or invalid tokens',async()=>{expect(await accessEmail(new Request('https://example.com'),'','')).toBe(null);expect(await accessEmail(new Request('https://example.com'),'demo.cloudflareaccess.com','aud')).toBe(null);expect(await accessEmail(new Request('https://example.com',{headers:{'Cf-Access-Jwt-Assertion':'fake'}}),'demo.cloudflareaccess.com','aud')).toBe(null);});
+});
+
+describe('photo layout and caption safety',()=>{
+  it('preserves supported sizes and wrap directions through repeated sanitization',()=>{
+    const image='<img src="/media/12345678-1234-1234-1234-123456789abc" data-size="medium" data-align="right" data-caption="From *Arrival* &amp; friends">';
+    const html=articleBody(cleanBody(cleanBody(image)));
+    expect(html).toContain('data-size="medium" data-align="right"');
+    expect(html).toContain('From <em>Arrival</em> &amp; friends');
+    expect(articleBody(image.replace('medium','evil').replace('right','bad'))).toContain('data-size="full" data-align="none"');
+  });
+  it('keeps caption markup escaped while allowing emphasis',()=>{
+    const html=articleBody('<img src="/media/12345678-1234-1234-1234-123456789abc" data-caption="*&lt;img src=x onerror=alert(1)&gt;*">');
+    expect(html).toContain('<em>&lt;img');expect(html).not.toContain('<img src=x');
+  });
 });

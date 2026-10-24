@@ -29,7 +29,12 @@ it('publishes a photo, escapes captions, enforces ownership, and revokes public 
   expect((await request(`/api/gallery/${ownerPost.id}`,'contributor','PUT',{hidden:true})).status).toBe(404);
   expect((await request('/api/gallery','contributor')).status).toBe(200);
   const contributorPosts:any[]=await(await request('/api/gallery','contributor')).json();expect(contributorPosts.some(item=>item.id===ownerPost.id)).toBe(false);
-  const created=await request('/api/gallery','contributor','POST',{media_ids:[photo.id,extra.id],caption:'A little moment. <script>alert(1)</script> #ShotOniPhone #TestGallery'});expect(created.status).toBe(201);post=await created.json();
+  const created=await request('/api/gallery','contributor','POST',{media_ids:[photo.id,extra.id],post_date:'2025-12-31',caption:'A little moment. <script>alert(1)</script> #ShotOniPhone #TestGallery'});expect(created.status).toBe(201);post=await created.json();
+  const storedDate=async()=>((await(await request('/api/gallery')).json()) as any[]).find(item=>item.id===post.id).created_at;
+  expect(await storedDate()).toBe('2025-12-31T12:00:00.000Z');
+  expect((await request(`/api/gallery/${post.id}`,'contributor','PUT',{post_date:'2026-02-30'})).status).toBe(400);
+  expect((await request(`/api/gallery/${post.id}`,'contributor','PUT',{post_date:'2026-01-01'})).status).toBe(200);
+  expect(await storedDate()).toBe('2026-01-01T12:00:00.000Z');
   expect((await request(photo.url,'visitor')).status).toBe(200);
   expect((await request(extra.url,'visitor')).status).toBe(200);
   const tagged=await(await request('/gallery?tag=shotoniphone','visitor')).text();expect(tagged).toContain(`moment-${post.id}`);expect(tagged).toContain('Photo 2 of 2');expect(tagged).toContain('/gallery?tag=shotoniphone');

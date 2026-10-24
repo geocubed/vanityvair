@@ -28,13 +28,14 @@ describe('owner image promotions',()=>{
     }
     expect((await request(photo.url,'GET',undefined,'visitor')).status).toBe(404);
   });
-  it('advances server-selected images on refresh without sending the whole rotation',async()=>{
-    const first=await request('/','GET',undefined,'visitor',0);const a=await first.text();
-    const second=await request('/','GET',undefined,'visitor',1);const b=await second.text();
-    const image=(html:string)=>html.match(/<aside[^>]+friend-banner[\s\S]*?<img[^>]+src="([^"]+)"/)?.[1];
-    expect(first.headers.get('set-cookie')).toContain('vv-edition=1');
-    expect(second.headers.get('set-cookie')).toContain('vv-edition=2');
-    expect(image(a)).toBeTruthy();expect(image(a)).not.toBe(image(b));
-    expect(a).not.toMatch(/class=["'][^"']*\bpromo-banner-card\b/);
+  it('serves random placements without a rotation cookie or duplicate companies when alternatives exist',async()=>{
+    const response=await request('/','GET',undefined,'visitor');const html=await response.text();
+    expect(response.status).toBe(200);expect(response.headers.get('set-cookie')||'').not.toContain('vv-edition');
+    const sources=[...html.matchAll(/<aside[^>]+friend-banner[\s\S]*?<img[^>]+src="([^"]+)"/g)].map(match=>match[1]);
+    expect(sources.length).toBeGreaterThan(0);
+    const items=await(await request('/api/promotions')).json() as any[];
+    const companies=sources.map(src=>items.find(item=>item.image===src)?.company_id);
+    const available=new Set(items.filter(item=>item.active&&item.format==='banner'&&item.image).map(item=>item.company_id));
+    if(available.size>=sources.length)expect(new Set(companies).size).toBe(sources.length);
   });
 });

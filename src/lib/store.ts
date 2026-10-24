@@ -3,7 +3,7 @@ import { photoCredit, type PhotoMetadata } from './photo-metadata';
 import { cleanBody, mediaIds } from './content';
 import type { Story, User, Promotion } from './types';
 export async function publishedStories(): Promise<Story[]> {
-  const { results } = await env.DB.prepare(`SELECT s.published_json, u.name AS author_name,u.slug AS author_slug,u.bio AS author_bio,u.avatar AS author_avatar FROM stories s JOIN users u ON s.author_email=u.email WHERE s.deleted_at IS NULL AND s.published_json IS NOT NULL ORDER BY s.published_at DESC LIMIT 250`).all<any>();
+  const { results } = await env.DB.prepare(`SELECT s.published_json, u.name AS author_name,u.slug AS author_slug,u.bio AS author_bio,u.avatar AS author_avatar FROM stories s JOIN users u ON s.author_email=u.email WHERE s.deleted_at IS NULL AND s.published_json IS NOT NULL ORDER BY json_extract(s.published_json, '$.published_at') DESC LIMIT 250`).all<any>();
   return results.map(row => ({ ...JSON.parse(row.published_json), author_name: row.author_name, author_slug: row.author_slug, author_bio: row.author_bio, author_avatar: row.author_avatar }));
 }
 export async function workingStory(id: string) { return env.DB.prepare('SELECT * FROM stories WHERE id=? AND deleted_at IS NULL').bind(id).first<Story>(); }
@@ -30,4 +30,13 @@ export async function hydrateStoryPhotos(story: Story): Promise<Story> {
   const photos = Object.fromEntries(results.map(photo=>[`/media/${photo.id}`,photo]));
   const cover = photos[story.hero];
   return {...story,body:cleanBody(story.body,photos),...(cover ? {hero_alt:cover.description || story.hero_alt,photo_credit:photoCredit(cover) || story.photo_credit} : {})};
+}
+
+export async function homepageStoryId():Promise<string>{
+  return (await env.DB.prepare("SELECT value FROM site_settings WHERE key='hero_story'").first<{value:string}>())?.value||'';
+}
+
+export async function publishedStoryById(id:string):Promise<Story|undefined>{
+  const row=await env.DB.prepare('SELECT s.published_json,u.name AS author_name,u.slug AS author_slug FROM stories s JOIN users u ON s.author_email=u.email WHERE s.id=? AND s.deleted_at IS NULL AND s.published_json IS NOT NULL').bind(id).first<{published_json:string;author_name:string;author_slug:string}>();
+  return row?{...JSON.parse(row.published_json),author_name:row.author_name,author_slug:row.author_slug}:undefined;
 }

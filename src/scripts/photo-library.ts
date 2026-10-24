@@ -7,20 +7,21 @@ type Options = {
   initialFile?: File;
   editPhoto?: Photo;
   openLibrary?: () => void;
+  remove?: (photo:Photo)=>Promise<void>;
 };
 const filename = (name:string) => { try { return decodeURIComponent(name); } catch { return name; } };
 const esc = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-export async function openPhotoLibrary({api, upload, select, initialFile, editPhoto, openLibrary}: Options) {
+export async function openPhotoLibrary({api, upload, select, initialFile, editPhoto, openLibrary, remove}: Options) {
   if (document.querySelector('#photo-library-dialog')) return;
   const dialog = document.createElement('dialog');
   dialog.id = 'photo-library-dialog'; dialog.className = 'photo-library-dialog';
   dialog.setAttribute('aria-labelledby', 'photo-library-title');
   dialog.innerHTML = `<div class="photo-library-heading"><div><span class="eyebrow category">YOUR PHOTOS</span><h2 id="photo-library-title">Choose a photo.</h2></div><button type="button" class="back-button" id="close-photo-library" aria-label="Close photo library">Close ×</button></div>
     <form id="library-upload"><label class="form-label" for="library-file">Upload from your computer</label><input class="form-input" type="file" id="library-file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" />
-    <div id="library-details" hidden><p id="library-filename"></p><label class="form-label" for="library-description">Describe this photo</label><textarea class="form-input caption-input" id="library-description" rows="2" maxlength="500" required placeholder="Felix and Megan posing at Crazy8s"></textarea><p class="photo-library-hint">Include names, the event, or the place so you can find it later. This also becomes the default image description for screen readers.</p><label class="photo-screenshot"><input type="checkbox" id="library-screenshot" /> This image is a screenshot</label><label class="form-label" for="library-photographer">Photographer credit</label><input class="form-input" id="library-photographer" maxlength="200" required placeholder="Photographer’s name" /><button class="button" id="library-upload-button">Upload and use photo ↗</button></div></form>
+    <div id="library-details" hidden><p id="library-filename"></p><label class="form-label" for="library-description">Photo description · metadata only</label><textarea class="form-input caption-input" id="library-description" rows="2" maxlength="500" required placeholder="Felix and Megan posing at Crazy8s"></textarea><p class="photo-library-hint">Metadata only: used for library search and as alternative text for screen readers. It does not appear as a visible caption. Add the reader-facing caption in your story.</p><label class="photo-screenshot"><input type="checkbox" id="library-screenshot" /> This image is a screenshot</label><label class="form-label" for="library-photographer">Photographer credit</label><input class="form-input" id="library-photographer" maxlength="200" required placeholder="Photographer’s name" /><button class="button" id="library-upload-button">Upload and use photo ↗</button></div></form>
     <div class="photo-library-search"><label class="form-label" for="library-search">Or find a photo in your library</label><input class="form-input" id="library-search" type="search" placeholder="Search descriptions or filenames…" /></div><p id="library-status" role="status" aria-live="polite">Loading your photos…</p><div class="photo-picker-grid" id="library-photos"></div>`;
   document.body.append(dialog); dialog.showModal();
-  let photos: Photo[] = []; let file = initialFile; let busy = false;
+  let photos: Photo[] = []; let file = initialFile; let busy = false; let dirty=false;
   let pendingPhoto: Photo | undefined = editPhoto;
   const status = dialog.querySelector<HTMLElement>('#library-status')!;
   const description = dialog.querySelector<HTMLTextAreaElement>('#library-description')!;
@@ -31,8 +32,11 @@ export async function openPhotoLibrary({api, upload, select, initialFile, editPh
   const close = dialog.querySelector<HTMLButtonElement>('#close-photo-library')!;
   const finish = (photo: Photo) => { dialog.close(); select({...photo, url: photo.url || `/media/${photo.id}`}); };
   dialog.addEventListener('close', () => dialog.remove(), {once:true});
-  dialog.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
-  close.addEventListener('click', () => { if (!busy) dialog.close(); });
+  const requestClose=()=>{if(!busy&&(!dirty||confirm('Discard these unsaved photo changes?')))dialog.close();};
+  dialog.querySelector('#library-upload')!.addEventListener('input',()=>{dirty=true;});
+  dialog.addEventListener('cancel',event=>{event.preventDefault();requestClose();});
+  close.addEventListener('click',requestClose);
+  dialog.addEventListener('click',event=>{const rect=dialog.getBoundingClientRect();if(event.target===dialog&&(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom))requestClose();});
   function showFile() {
     dialog.querySelector<HTMLElement>('#library-details')!.hidden = !file && !editPhoto;
     dialog.querySelector('#library-filename')!.textContent = file?.name || '';
@@ -44,9 +48,16 @@ export async function openPhotoLibrary({api, upload, select, initialFile, editPh
     dialog.querySelector<HTMLElement>('#library-file')!.parentElement!.querySelector('label')!.style.display='none';
     dialog.querySelector<HTMLInputElement>('#library-file')!.hidden=true;
     dialog.querySelector('#library-filename')!.textContent=filename(editPhoto.name);
+    const preview=document.createElement('img');preview.className='photo-edit-preview';preview.src=editPhoto.url||`/media/${editPhoto.id}`;preview.alt=editPhoto.description||filename(editPhoto.name);dialog.querySelector('#library-filename')!.before(preview);
     description.value=editPhoto.description || '';photographer.value=editPhoto.photographer || '';screenshot.checked=Boolean(editPhoto.is_screenshot);toggleScreenshot();
     dialog.querySelector('#library-upload-button')!.textContent='Save photo details';
     dialog.querySelector<HTMLElement>('.photo-library-search')!.hidden=true;
+    if(remove){
+      const button=document.createElement('button');button.type='button';button.className='photo-remove-button';button.textContent='Remove photo';
+      button.addEventListener('click',async()=>{if(busy||!confirm('Permanently remove this unused photo? Keep your original copy.'))return;busy=true;button.disabled=true;close.disabled=true;
+        try{await remove(editPhoto);dialog.close();}catch(error){status.textContent=(error as Error).message;}finally{busy=false;button.disabled=false;close.disabled=false;}
+      });dialog.querySelector('#library-upload-button')!.after(button);
+    }
   }
   dialog.querySelector<HTMLInputElement>('#library-file')!.addEventListener('change', event => {
     file = (event.target as HTMLInputElement).files?.[0]; showFile();

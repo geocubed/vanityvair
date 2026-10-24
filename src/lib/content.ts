@@ -1,5 +1,5 @@
 import sanitize from 'sanitize-html';
-import { photoCredit, type PhotoMetadata } from './photo-metadata';
+import { formatPhotoCredit, photoCredit, type PhotoMetadata } from './photo-metadata';
 import { categories } from './types';
 import { videoEmbed } from './video';
 export { MAX_IMAGE_BYTES } from './content-constants';
@@ -13,12 +13,12 @@ export const mediaIds = (s: string) => [...new Set([...s.matchAll(/\/media\/([a-
 export function cleanBody(body: string, descriptions: Record<string,string | PhotoMetadata> = {}) {
   return sanitize(body, {
     allowedTags: ['p', 'h2', 'h3', 'strong', 'em', 's', 'ul', 'ol', 'li', 'blockquote', 'br', 'a', 'img', 'iframe'],
-    allowedAttributes: { a: ['href', 'target', 'rel'], img: ['src', 'alt', 'title','data-caption','data-photo-credit'], iframe: ['src','title','loading','allowfullscreen','referrerpolicy','data-video'] },
+    allowedAttributes: { a: ['href', 'target', 'rel'], img: ['src', 'alt', 'title','data-caption','data-photo-credit','data-size','data-align'], iframe: ['src','title','loading','allowfullscreen','referrerpolicy','data-video'] },
     allowedSchemes: ['https'],
     transformTags: {
       img: (_tag, attrs) => {
         const metadata = descriptions[attrs.src];
-        return {tagName:'img',attribs:{...attrs,'data-caption':(attrs['data-caption'] || '').slice(0,500),alt:typeof metadata === 'object' ? metadata.description || attrs.alt || '' : attrs.alt?.trim() ? attrs.alt : metadata || '', 'data-photo-credit':typeof metadata === 'object' ? photoCredit(metadata) : attrs['data-photo-credit'] || ''}};
+        return {tagName:'img',attribs:{...attrs,'data-size':['small','medium','large','full'].includes(attrs['data-size'])?attrs['data-size']:'full','data-align':['left','right'].includes(attrs['data-align'])?attrs['data-align']:'none','data-caption':(attrs['data-caption'] || '').slice(0,500),alt:typeof metadata === 'object' ? metadata.description || attrs.alt || '' : attrs.alt?.trim() ? attrs.alt : metadata || '', 'data-photo-credit':typeof metadata === 'object' ? photoCredit(metadata) : attrs['data-photo-credit'] || ''}};
       },
       a: (_tag, attrs) => ({ tagName: 'a', attribs: { href: safeLink(attrs.href || ''), rel: 'noopener noreferrer' } }),
       iframe: (_tag, attrs) => ({tagName:'iframe',attribs:{src:videoEmbed(attrs.src||''),title:'Embedded video','data-video':'true',loading:'lazy',allowfullscreen:'',referrerpolicy:'strict-origin-when-cross-origin'}}),
@@ -43,7 +43,13 @@ export function articleBody(body: string) {
   // Attribute values come from sanitized HTML. Keep their escaping intact when creating figures.
   return cleanBody(body).replace(/<img\b[^>]*>/g, image => {
     const attr = (name:string) => image.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1] || '';
-    const caption=attr('data-caption'); const credit=attr('data-photo-credit');
-    return `<figure class="body-photo">${image}${caption || credit ? `<figcaption><span class="body-photo-caption">${caption}</span><span class="photo-credit">${credit}</span></figcaption>` : ''}</figure>`;
+    const caption=captionMarkup(attr('data-caption'),true); const credit=formatPhotoCredit(attr('data-photo-credit'));
+    return `<figure class="body-photo" data-size="${attr('data-size')}" data-align="${attr('data-align')}">${image}${caption || credit ? `<figcaption><span class="body-photo-caption">${caption}</span><span class="photo-credit">${credit}</span></figcaption>` : ''}</figure>`;
   });
+}
+
+// Captions support only paired asterisks for emphasis; HTML is always escaped.
+export function captionMarkup(text:string, escaped=false):string{
+  const safe=escaped?text:text.replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!));
+  return safe.replace(/\*([^*\n]+)\*/g,'<em>$1</em>');
 }

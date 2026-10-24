@@ -9,4 +9,4 @@ export type Story = {
   author_name?: string; author_slug?: string; author_bio?: string; author_avatar?: string;
 };
 export type PromotionFormat = 'banner' | 'poster';
-export type Promotion = { id: string; name: string; headline: string; description: string; url: string; image: string; active: number; position: number; format: PromotionFormat; alt: string };
+export type Promotion = { company_id?: string; id: string; name: string; headline: string; description: string; url: string; image: string; active: number; position: number; format: PromotionFormat; alt: string };

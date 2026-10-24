@@ -1,0 +1,9 @@
+---
+import Homepage from '../../components/Homepage.astro';
+import {publishedStoryById,promotions} from '../../lib/store';
+if(Astro.locals.user?.role!=='owner')return new Response('Not found',{status:404});
+const id=Astro.url.searchParams.get('story')||'';
+if(id&&!await publishedStoryById(id))return new Response('Choose a currently published story.',{status:404});
+Astro.locals.friendImages=await promotions();
+---
+<Homepage preview previewStoryId={id} />

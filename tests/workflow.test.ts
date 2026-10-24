@@ -42,10 +42,10 @@ describe('local editorial workflow',()=>{
       story=await(await req('/api/stories','contributor','POST',data)).json();
       expect(story.hero_alt).toBe(description);expect(story.body).toContain(`alt="${description}"`);
       story=await(await req(`/api/stories/${story.id}`,'contributor','PUT',{...data,hero_alt:'Custom cover description',body:`<p>Photo story</p><img src="${photo.url}" alt="Custom body description" data-caption="A caption for this story.">`,revision:story.revision})).json();
-      expect(story.hero_alt).toBe(description);expect(story.body).toContain(`alt="${description}"`);expect(story.photo_credit).toBe('Photograph: Test Photographer');
+      expect(story.hero_alt).toBe(description);expect(story.body).toContain(`alt="${description}"`);expect(story.photo_credit).toBe('Photo Credit: Test Photographer');
       story=await(await req(`/api/stories/${story.id}/publish`,'owner','POST',{revision:story.revision})).json();
       expect((await req(`/api/media/${photo.id}`,'contributor','PUT',{description:'Updated library description',photographer:'Updated Photographer'})).status).toBe(200);
-      const updatedHtml=await(await req(`/stories/${story.slug}`)).text();expect(updatedHtml).toContain('Photograph: Updated Photographer');expect(updatedHtml).toContain('A caption for this story.');expect(updatedHtml).toContain('alt="Updated library description"');
+      const updatedHtml=await(await req(`/stories/${story.slug}`)).text();expect(updatedHtml).toContain('Photo Credit: Updated Photographer');expect(updatedHtml).toContain('A caption for this story.');expect(updatedHtml).toContain('alt="Updated library description"');
       expect((await req(`/api/media/${photo.id}`,'contributor','PUT',{description:'App settings screen',is_screenshot:true})).status).toBe(200);
       const screenshotHtml=await(await req(`/stories/${story.slug}`)).text();expect(screenshotHtml).toContain('Screenshot');expect(screenshotHtml).toContain('A caption for this story.');
 

@@ -4,7 +4,8 @@ declare namespace App {
     user: import('./lib/types').User | null;
     localPreview: boolean;
     friendImages: import('./lib/types').Promotion[];
-    editionVisit: number;
+    usedPromotionCompanies: Set<string>;
+    promotionPlacements: Map<string, import('./lib/types').Promotion | undefined>;
   }
 }
 declare namespace Cloudflare {

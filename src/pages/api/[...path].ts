@@ -1,3 +1,4 @@
+import {parsePostDate} from '../../lib/post-date';
 import type { APIRoute } from 'astro';
 import type { D1PreparedStatement } from '@cloudflare/workers-types';
 import { env } from 'cloudflare:workers';
@@ -43,6 +44,51 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
       cookies.set('vv-preview-role', body.role === 'contributor' ? 'contributor' : 'owner', { path: '/', httpOnly: true, sameSite: 'strict' });
       return Response.json({ ok: true });
     }
+    if(resource==='activity'){
+      const scope=user.role==='owner'?'1=1':"(actor_email=? OR kind='website')";
+      const values=user.role==='owner'?[]:[user.email];
+      const latest=await env.DB.prepare(`SELECT COALESCE(MAX(seq),0) AS seq FROM kitchen_activity WHERE ${scope}`).bind(...values).first<{seq:number}>();
+      if(method==='POST'&&id==='read'){
+        const b=JSON.parse(new TextDecoder().decode(await limitedBytes(request,1000)));
+        const seq=Number(b.seq);if(!Number.isSafeInteger(seq)||seq<0||seq>(latest?.seq||0))return error('Invalid activity marker.');
+        await env.DB.prepare('INSERT INTO kitchen_reads(user_email,seen_seq) VALUES(?,?) ON CONFLICT(user_email) DO UPDATE SET seen_seq=MAX(seen_seq,excluded.seen_seq)').bind(user.email,seq).run();return Response.json({ok:true});
+      }
+      if(method!=='GET')return error('Unknown activity action.',405);
+      const seen=(await env.DB.prepare('SELECT seen_seq FROM kitchen_reads WHERE user_email=?').bind(user.email).first<{seen_seq:number}>())?.seen_seq||0;
+      const unread=await env.DB.prepare(`SELECT COUNT(*) AS count FROM kitchen_activity WHERE ${scope} AND seq>?`).bind(...values,seen).first<{count:number}>();
+      if(id==='unread')return Response.json({unread:unread?.count||0,latest:latest?.seq||0});
+      const q=new URL(request.url).searchParams;
+      const clauses=[scope],bindings:unknown[]=[...values];
+      for(const [param,column] of [['contributor','actor_email'],['kind','kind'],['action','action'],['target','target_id']])if(q.get(param)){clauses.push(`${column}=?`);bindings.push(q.get(param));}
+      const before=Number(q.get('before'));if(Number.isSafeInteger(before)&&before>0){clauses.push('seq<?');bindings.push(before);}
+      const rows=await env.DB.prepare(`SELECT * FROM kitchen_activity WHERE ${clauses.join(' AND ')} ORDER BY seq DESC LIMIT 51`).bind(...bindings).all();
+      const contributors=await env.DB.prepare(`SELECT DISTINCT actor_email,actor_name FROM kitchen_activity WHERE ${scope} AND actor_email IS NOT NULL ORDER BY actor_name`).bind(...values).all();
+      const actions=await env.DB.prepare(`SELECT DISTINCT action FROM kitchen_activity WHERE ${scope} ORDER BY action`).bind(...values).all();
+      const targets=await env.DB.prepare(`SELECT target_id,MAX(title) AS title FROM kitchen_activity WHERE ${scope} AND kind='article' AND target_id!='' GROUP BY target_id ORDER BY title`).bind(...values).all();
+      return Response.json({items:rows.results.slice(0,50),has_more:rows.results.length>50,contributors:contributors.results,actions:actions.results,articles:targets.results,unread:unread?.count||0,latest:latest?.seq||0,seen});
+    }
+    if(resource==='companies'){
+      owner();
+      if(method==='GET')return Response.json((await env.DB.prepare('SELECT * FROM promotion_companies ORDER BY name COLLATE NOCASE').all()).results);
+      if(method==='POST'){
+        const b=JSON.parse(new TextDecoder().decode(await limitedBytes(request,2000)));const name=typeof b.name==='string'?b.name.trim():'';
+        if(!name||name.length>100)return error('Enter a company name of 1–100 characters.');
+        const id=crypto.randomUUID();await env.DB.prepare('INSERT INTO promotion_companies(id,name) VALUES(?,?) ON CONFLICT(name) DO NOTHING').bind(id,name).run();
+        return Response.json(await env.DB.prepare('SELECT * FROM promotion_companies WHERE name=? COLLATE NOCASE').bind(name).first());
+      }
+      return error('Unknown company action.',405);
+    }
+    if(resource==='homepage'){
+      owner();
+      if(method==='GET')return Response.json({story_id:(await env.DB.prepare("SELECT value FROM site_settings WHERE key='hero_story'").first<{value:string}>())?.value||''});
+      if(method==='PUT'){
+        const body=JSON.parse(new TextDecoder().decode(await limitedBytes(request,1000)));
+        if(typeof body.story_id!=='string')return error('Choose a published story.');
+        if(body.story_id && !await env.DB.prepare('SELECT id FROM stories WHERE id=? AND deleted_at IS NULL AND published_json IS NOT NULL').bind(body.story_id).first())return error('Choose a currently published story.');
+        await env.DB.prepare("INSERT INTO site_settings(key,value) VALUES('hero_story',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(body.story_id).run();
+        return Response.json({story_id:body.story_id});
+      }
+    }
     if(resource==='trash'){
       if(method==='GET'){
         const scope=user.role==='owner'?'':' AND t.author_email=?';
@@ -77,7 +123,7 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
         }
         const postId=crypto.randomUUID();
         await env.DB.batch([
-          env.DB.prepare('INSERT INTO gallery_posts(id,author_email,media_id,caption,created_at) VALUES(?,?,?,?,?)').bind(postId,user.email,ids[0],caption,new Date().toISOString()),
+          env.DB.prepare('INSERT INTO gallery_posts(id,author_email,media_id,caption,created_at) VALUES(?,?,?,?,?)').bind(postId,user.email,ids[0],caption,body.post_date!==undefined?parsePostDate(body.post_date):new Date().toISOString()),
           ...ids.map((mediaId:string,position:number)=>env.DB.prepare('INSERT INTO gallery_images(post_id,media_id,position) VALUES(?,?,?)').bind(postId,mediaId,position)),
           ...hashtags(caption).map(tag=>env.DB.prepare('INSERT INTO gallery_tags(post_id,tag) VALUES(?,?)').bind(postId,tag)),
         ]);
@@ -88,6 +134,7 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
         if (!post || (user.role!=='owner' && post.author_email!==user.email)) return error('Post not found.',404);
         if(method==='DELETE'){await env.DB.prepare('UPDATE gallery_posts SET deleted_at=? WHERE id=? AND deleted_at IS NULL').bind(new Date().toISOString(),id).run();return Response.json({ok:true});}
         const updates:D1PreparedStatement[]=[];
+        if(body.post_date!==undefined)updates.push(env.DB.prepare('UPDATE gallery_posts SET created_at=? WHERE id=? AND deleted_at IS NULL').bind(parsePostDate(body.post_date),id));
         if(typeof body.hidden==='boolean')updates.push(env.DB.prepare('UPDATE gallery_posts SET hidden=? WHERE id=? AND deleted_at IS NULL').bind(body.hidden?1:0,id));
         if(body.caption!==undefined){
           if(typeof body.caption!=='string'||body.caption.trim().length>1000)return error('Keep the caption to 1,000 characters.');
@@ -129,8 +176,9 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
         data.body = cleanBody(data.body, descriptions);
         if (descriptions[data.hero]) { data.hero_alt = descriptions[data.hero].description || data.hero_alt; data.photo_credit = photoCredit(descriptions[data.hero]) || data.photo_credit; }
         const slug = `${slugify(data.title)}-${storyId.slice(0, 6)}`;
+        const publicationDate=user.role==='owner' && body.post_date ? parsePostDate(body.post_date) : null;
         await env.DB.batch([
-          env.DB.prepare('INSERT INTO stories(id,slug,title,deck,category,body,hero,hero_alt,caption,photo_credit,author_email,created_at,updated_at,save_token) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(storyId,slug,data.title,data.deck,data.category,data.body,data.hero,data.hero_alt,data.caption,data.photo_credit,user.email,now,now,storyId),
+          env.DB.prepare('INSERT INTO stories(id,slug,title,deck,category,body,hero,hero_alt,caption,photo_credit,author_email,created_at,updated_at,save_token,published_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(storyId,slug,data.title,data.deck,data.category,data.body,data.hero,data.hero_alt,data.caption,data.photo_credit,user.email,now,now,storyId,publicationDate),
           ...refStatements(storyId, ids, 'draft', storyId),
         ]);
         return Response.json(await workingStory(storyId), { status: 201 });
@@ -150,10 +198,11 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
       let statements: D1PreparedStatement[] = [];
       if (method === 'PUT' && !action) {
         const data = validateStory(body);
+        const publicationDate=user.role==='owner' && body.post_date!==undefined ? (body.post_date ? parsePostDate(body.post_date) : null) : story.published_at;
         const ids = mediaIds(`${data.hero} ${data.body}`); const descriptions = await checkMedia(ids, user);
         data.body = cleanBody(data.body, descriptions);
         if (descriptions[data.hero]) { data.hero_alt = descriptions[data.hero].description || data.hero_alt; data.photo_credit = photoCredit(descriptions[data.hero]) || data.photo_credit; }
-        statements = [env.DB.prepare("UPDATE stories SET title=?,deck=?,category=?,body=?,hero=?,hero_alt=?,caption=?,photo_credit=?,status='draft',revision=revision+1,updated_at=?,save_token=? WHERE id=? AND revision=?").bind(data.title,data.deck,data.category,data.body,data.hero,data.hero_alt,data.caption,data.photo_credit,now,token,id,body.revision), ...refStatements(id,ids,'draft',token)];
+        statements = [env.DB.prepare("UPDATE stories SET title=?,deck=?,category=?,body=?,hero=?,hero_alt=?,caption=?,photo_credit=?,published_at=?,status='draft',revision=revision+1,updated_at=?,save_token=? WHERE id=? AND revision=?").bind(data.title,data.deck,data.category,data.body,data.hero,data.hero_alt,data.caption,data.photo_credit,publicationDate,now,token,id,body.revision), ...refStatements(id,ids,'draft',token)];
       } else if (method === 'POST' && action) {
         if (action === 'submit') {
           if (!story.body.replace(/<[^>]+>/g, '').trim()) return error('Add a little writing before submitting.');
@@ -256,7 +305,10 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
       if (method === 'POST') {
         const b = JSON.parse(new TextDecoder().decode(await limitedBytes(request,10_000)));
         const rawUrl=String(b.url || '').trim(); const url=rawUrl ? safeLink(rawUrl) : '';
-        const name=String(b.name || '').trim().slice(0,100); const alt=String(b.alt || '').trim().slice(0,500);
+        let name=String(b.name || '').trim().slice(0,100);
+        let companyId=String(b.company_id||'');
+        if(companyId){const company=await env.DB.prepare('SELECT name FROM promotion_companies WHERE id=?').bind(companyId).first<{name:string}>();if(!company)return error('Choose a company first.');name=company.name;}
+        const alt=String(b.alt || '').trim().slice(0,500);
         if (!name || !alt || (rawUrl && !url)) return error('Add a business name, image description, and a valid HTTPS or site link if you want one.');
         if (!['banner','poster'].includes(b.format)) return error('Choose Banner or Poster.');
         const format = b.format as PromotionFormat;
@@ -265,9 +317,14 @@ export const ALL: APIRoute = async ({ request, params, locals, cookies }) => {
         const mediaId=mediaIds(image)[0];
         const media=await env.DB.prepare('SELECT width,height FROM media WHERE id=?').bind(mediaId).first<{width:number;height:number}>();
         if (!media || !matchesFormat(media.width,media.height,format)) return error('Upload and crop this image to the selected shape before saving.');
-        const result = await env.DB.prepare("INSERT INTO promotions(id,name,headline,description,url,image,active,position,format,alt) SELECT ?,?,'','',?,?,?,?,?,? FROM media WHERE id=? ON CONFLICT(id) DO UPDATE SET name=excluded.name,url=excluded.url,image=excluded.image,active=excluded.active,position=excluded.position,format=excluded.format,alt=excluded.alt").bind(b.id||crypto.randomUUID(),name,url,image,b.active===false||b.active===0?0:1,Math.max(0,Math.min(10000,Number(b.position)||0)),format,alt,mediaId).run();
+        if(!companyId){
+          await env.DB.prepare('INSERT INTO promotion_companies(id,name) VALUES(?,?) ON CONFLICT(name) DO NOTHING').bind(crypto.randomUUID(),name).run();
+          companyId=(await env.DB.prepare('SELECT id FROM promotion_companies WHERE name=? COLLATE NOCASE').bind(name).first<{id:string}>())!.id;
+        }
+        const promotionId=b.id||crypto.randomUUID();
+        const result = await env.DB.prepare("INSERT INTO promotions(id,name,headline,description,url,image,active,position,format,alt,company_id) SELECT ?,?,'','',?,?,?,?,?,?,? FROM media WHERE id=? ON CONFLICT(id) DO UPDATE SET name=excluded.name,url=excluded.url,image=excluded.image,active=excluded.active,position=excluded.position,format=excluded.format,alt=excluded.alt,company_id=excluded.company_id").bind(promotionId,name,url,image,b.active===false||b.active===0?0:1,Math.max(0,Math.min(10000,Number(b.position)||0)),format,alt,companyId,mediaId).run();
         if (!result.meta.changes) return error('This image is no longer available. Upload it again.',409);
-        return Response.json({ok:true});
+        return Response.json({ok:true,id:promotionId,name});
       }
       if(method==='DELETE' && id) { await env.DB.prepare('DELETE FROM promotions WHERE id=?').bind(id).run(); return Response.json({ok:true, note:'Ad deleted. Its image stays in Photo library for reuse or removal.'}); }
     }
